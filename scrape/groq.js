@@ -30,6 +30,10 @@ function getGroqClient() {
 function convertToWhatsAppFormat(text) {
     return (
         text
+            // ✅ REMOVE TABLES - hapus semua tabel markdown
+            .replace(/\|[\s\S]*?\|/g, "") // Hapus table dengan | pipes
+            .replace(/[\-]{3,}/g, "") // Hapus separator line (---)
+
             // Convert **bold** atau ***bold*** menjadi *bold* (WhatsApp)
             .replace(/\*\*\*(.*?)\*\*\*/g, "*$1*") // ***text*** → *text*
             .replace(/\*\*(.*?)\*\*/g, "*$1*") // **text** → *text*
@@ -37,18 +41,21 @@ function convertToWhatsAppFormat(text) {
             // Convert __italic__ menjadi _italic_ (WhatsApp)
             .replace(/\_\_(.*?)\_\_/g, "_$1_") // __text__ → _text_
 
-            // Strikethrough sudah sama: ~~text~~ → ~text~ (optional, bisa dikomentari jika tidak perlu)
+            // Strikethrough sudah sama: ~~text~~ → ~text~
             .replace(/\~\~(.*?)\~\~/g, "~$1~") // ~~text~~ → ~text~
 
-            // Remove code blocks dan inline code (bisa disesuaikan)
+            // Remove code blocks dan inline code
             .replace(/\`\`\`[\s\S]*?\`\`\`/g, "") // Hapus ```code blocks```
             .replace(/\`(.*?)\`/g, "$1") // `code` → code
 
-            // Convert [text](link) menjadi text saja (atau bisa "text: link")
+            // Convert [text](link) menjadi text: link
             .replace(/\[(.*?)\]\((.*?)\)/g, "$1: $2") // [text](link) → text: link
 
             // Remove headers markdown
             .replace(/^#+\s/gm, "") // # Header → Header
+
+            // Clean up multiple newlines
+            .replace(/\n{3,}/g, "\n\n") // Max 2 newlines
 
             .trim()
     );
@@ -66,7 +73,7 @@ async function askGroq(question) {
                 {
                     role: "system",
                     content:
-                        "Kamu adalah asisten AI yang helpful dan ramah. Jawab dengan bahasa Indonesia yang natural. Gunakan **bold** untuk penekanan pada kata-kata penting.",
+                        "Kamu adalah asisten AI yang helpful dan ramah. Jawab dengan bahasa Indonesia yang natural. Gunakan **bold** untuk penekanan pada kata-kata penting. JANGAN PERNAH gunakan format table atau grid. Selalu jawab dalam bentuk paragraf, list dengan bullet points, atau numbering saja.",
                 },
                 {
                     role: "user",
@@ -114,7 +121,7 @@ async function askGroqWithSearch(question) {
                 {
                     role: "system",
                     content:
-                        "Kamu adalah asisten AI yang helpful. Jawab pertanyaan user berdasarkan informasi web search yang diberikan. Jawab dengan bahasa Indonesia yang natural dan easy to understand. Sertakan sumber jika relevan. Gunakan **bold** untuk penekanan pada informasi penting.",
+                        "Kamu adalah asisten AI yang helpful. Jawab pertanyaan user berdasarkan informasi web search yang diberikan. Jawab dengan bahasa Indonesia yang natural dan easy to understand. Sertakan sumber jika relevan. Gunakan **bold** untuk penekanan pada informasi penting. JANGAN PERNAH gunakan format table atau grid. Selalu jawab dalam bentuk paragraf, list dengan bullet points, atau numbering saja.",
                 },
                 {
                     role: "user",
