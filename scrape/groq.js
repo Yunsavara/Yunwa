@@ -121,11 +121,16 @@ async function askGroqWithSearch(question) {
                 {
                     role: "system",
                     content:
-                        "Kamu adalah asisten AI yang helpful. Jawab pertanyaan user berdasarkan informasi web search yang diberikan. Jawab dengan bahasa Indonesia yang natural dan easy to understand. Sertakan sumber jika relevan. Gunakan **bold** untuk penekanan pada informasi penting. JANGAN PERNAH gunakan format table atau grid. Selalu jawab dalam bentuk paragraf, list dengan bullet points, atau numbering saja.",
+                        "Kamu adalah asisten AI yang helpful. Jawab pertanyaan user berdasarkan informasi web search yang diberikan. " +
+                        "Jawab dengan bahasa Indonesia yang natural dan easy to understand. " +
+                        "PENTING: Ketika menyebutkan sumber, gunakan format '[1]', '[2]', dll yang merujuk ke nomor sumber di hasil pencarian. " +
+                        "Di akhir jawaban, tampilkan daftar sumber lengkap dengan URL dalam format yang rapi. " +
+                        "Gunakan **bold** untuk penekanan pada informasi penting. " +
+                        "JANGAN PERNAH gunakan format table atau grid. Selalu jawab dalam bentuk paragraf, list dengan bullet points, atau numbering saja.",
                 },
                 {
                     role: "user",
-                    content: `Pertanyaan: ${question}\n\nHasil Web Search:\n${searchResults}\n\nJawab pertanyaan berdasarkan informasi di atas dengan jelas dan ringkas.`,
+                    content: `Pertanyaan: ${question}\n\nHasil Web Search:\n${searchResults}\n\nJawab pertanyaan berdasarkan informasi di atas. Cite sumber dengan format [1], [2], dll. Di akhir jawaban, tampilkan daftar lengkap semua sumber dengan URL-nya.`,
                 },
             ],
             model: "openai/gpt-oss-120b",
