@@ -8,7 +8,7 @@ module.exports = {
 
     async execute(yunwa, msg, sender, pushname) {
         await yunwa.sendMessage(sender, {
-            text: `Halo juga ${pushname}! 👋`,
+            text: `Hello juga ${pushname}! 👋`,
         });
     },
 };
