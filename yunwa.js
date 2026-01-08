@@ -3,7 +3,7 @@ module.exports = async (yunwa, m) => {
 
     if (!msg.message) return;
 
-    // Ignore message from bot itself
+    // Ignore pesan dari bot sendiri
     if (msg.key.fromMe) return;
 
     const body =
@@ -12,16 +12,13 @@ module.exports = async (yunwa, m) => {
     const sender = msg.key.remoteJid;
     const pushname = msg.pushName || "Yunwa";
 
-    // Log all inputed messages
-    console.log(`[${pushname}]: ${body}`);
-
     // prefix bot Yunwa
     if (!body.startsWith("!")) return;
 
     // commands execution
     const command = body.slice(1).trim().toLowerCase();
 
-    // log inputed message
+    // log inputed message (cuma yang pakai prefix !)
     console.log(`✓ Perintah diterima: ${command} dari ${pushname}`);
 
     // features
