@@ -37,11 +37,6 @@ module.exports = {
                 return;
             }
 
-            // Kirim notif sedang proses
-            await yunwa.sendMessage(sender, {
-                text: "🔍 LET MI TING...",
-            });
-
             // Kirim typing indicator
             await yunwa.sendPresenceUpdate("composing", sender);
 
