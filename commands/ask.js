@@ -29,7 +29,7 @@ module.exports = {
                     text:
                         "❌ *API Keys belum di-setup!*\n\n" +
                         "Untuk menggunakan fitur AI, owner bot harus setup API keys dulu.\n\n" +
-                        "🔑 API Keys yang dibutuhkan (100% GRATIS):\n" +
+                        "🔑 API Keys yang dibutuhkan :\n" +
                         "• Groq: https://console.groq.com/keys\n" +
                         "• Tavily: https://tavily.com/\n\n" +
                         "📖 Restart bot untuk menjalankan setup wizard.",

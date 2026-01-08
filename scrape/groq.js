@@ -30,7 +30,7 @@ function getGroqClient() {
 function convertToWhatsAppFormat(text) {
     return (
         text
-            // ✅ REMOVE TABLES - hapus semua tabel markdown
+            // REMOVE TABLES - hapus semua tabel markdown
             .replace(/\|[\s\S]*?\|/g, "") // Hapus table dengan | pipes
             .replace(/[\-]{3,}/g, "") // Hapus separator line (---)
 
