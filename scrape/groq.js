@@ -20,6 +20,41 @@ function getGroqClient() {
 }
 
 /**
+ * Convert markdown formatting to WhatsApp formatting
+ * WhatsApp format:
+ * - *bold* (single asterisk)
+ * - _italic_ (underscore)
+ * - ~strikethrough~ (tilde)
+ * - ```monospace``` (triple backticks)
+ */
+function convertToWhatsAppFormat(text) {
+    return (
+        text
+            // Convert **bold** atau ***bold*** menjadi *bold* (WhatsApp)
+            .replace(/\*\*\*(.*?)\*\*\*/g, "*$1*") // ***text*** → *text*
+            .replace(/\*\*(.*?)\*\*/g, "*$1*") // **text** → *text*
+
+            // Convert __italic__ menjadi _italic_ (WhatsApp)
+            .replace(/\_\_(.*?)\_\_/g, "_$1_") // __text__ → _text_
+
+            // Strikethrough sudah sama: ~~text~~ → ~text~ (optional, bisa dikomentari jika tidak perlu)
+            .replace(/\~\~(.*?)\~\~/g, "~$1~") // ~~text~~ → ~text~
+
+            // Remove code blocks dan inline code (bisa disesuaikan)
+            .replace(/\`\`\`[\s\S]*?\`\`\`/g, "") // Hapus ```code blocks```
+            .replace(/\`(.*?)\`/g, "$1") // `code` → code
+
+            // Convert [text](link) menjadi text saja (atau bisa "text: link")
+            .replace(/\[(.*?)\]\((.*?)\)/g, "$1: $2") // [text](link) → text: link
+
+            // Remove headers markdown
+            .replace(/^#+\s/gm, "") // # Header → Header
+
+            .trim()
+    );
+}
+
+/**
  * Ask Groq AI (tanpa web search)
  */
 async function askGroq(question) {
@@ -31,7 +66,7 @@ async function askGroq(question) {
                 {
                     role: "system",
                     content:
-                        "Kamu adalah asisten AI yang helpful dan ramah. Jawab dengan bahasa Indonesia.",
+                        "Kamu adalah asisten AI yang helpful dan ramah. Jawab dengan bahasa Indonesia yang natural. Gunakan **bold** untuk penekanan pada kata-kata penting.",
                 },
                 {
                     role: "user",
@@ -43,10 +78,12 @@ async function askGroq(question) {
             max_tokens: 1024,
         });
 
-        return (
+        const response =
             chatCompletion.choices[0]?.message?.content ||
-            "Maaf, tidak ada respon."
-        );
+            "Maaf, tidak ada respon.";
+
+        // Convert markdown ke WhatsApp format
+        return convertToWhatsAppFormat(response);
     } catch (error) {
         console.error("Error asking Groq:", error);
         if (error.message.includes("GROQ_API_KEY")) {
@@ -77,7 +114,7 @@ async function askGroqWithSearch(question) {
                 {
                     role: "system",
                     content:
-                        "Kamu adalah asisten AI yang helpful. Jawab pertanyaan user berdasarkan informasi web search yang diberikan. Jawab dengan bahasa Indonesia yang natural dan easy to understand. Sertakan sumber jika relevan.",
+                        "Kamu adalah asisten AI yang helpful. Jawab pertanyaan user berdasarkan informasi web search yang diberikan. Jawab dengan bahasa Indonesia yang natural dan easy to understand. Sertakan sumber jika relevan. Gunakan **bold** untuk penekanan pada informasi penting.",
                 },
                 {
                     role: "user",
@@ -89,10 +126,12 @@ async function askGroqWithSearch(question) {
             max_tokens: 2048,
         });
 
-        return (
+        const response =
             chatCompletion.choices[0]?.message?.content ||
-            "Maaf, tidak ada respon."
-        );
+            "Maaf, tidak ada respon.";
+
+        // Convert markdown ke WhatsApp format
+        return convertToWhatsAppFormat(response);
     } catch (error) {
         console.error("Error asking Groq with search:", error);
         if (
