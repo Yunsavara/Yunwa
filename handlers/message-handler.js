@@ -32,8 +32,9 @@ function setupMessageHandler(yunwa) {
             // prefix bot Yunwa
             if (!body.startsWith("!")) return;
 
-            // commands execution
-            const commandName = body.slice(1).trim().toLowerCase();
+            // Split command dan ambil kata pertama saja sebagai command name
+            const args = body.slice(1).trim().split(/ +/);
+            const commandName = args[0].toLowerCase();
 
             // log inputed message (cuma yang pakai prefix !)
             console.log(
