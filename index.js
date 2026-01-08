@@ -114,16 +114,14 @@ async function connectToWhatsapp() {
 
     // Handle messages
     yunwa.ev.on("messages.upsert", async (m) => {
-        const msg = m.messages[0];
+        try {
+            // Debug: log raw message type
+            console.log(chalk.gray(`[MESSAGE TYPE]: ${m.type}`));
 
-        if (!msg.message) return;
-
-        const body =
-            msg.message.conversation ||
-            msg.message.extendedTextMessage?.text ||
-            "";
-        const sender = msg.key.remoteJid;
-        const pushname = msg.pushName || "Yunwa";
+            require("./yunwa")(yunwa, m);
+        } catch (error) {
+            console.error(chalk.red("Error handling message:"), error);
+        }
     });
 }
 
