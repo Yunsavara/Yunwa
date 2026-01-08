@@ -113,10 +113,17 @@ async function connectToWhatsapp() {
     });
 
     // Handle messages
-    yunwa.ev.on("messages.upsert", async ({ messages, type }) => {
-        if (type === "notify") {
-            console.log(chalk.cyan("New message received:"), messages);
-        }
+    yunwa.ev.on("messages.upsert", async (m) => {
+        const msg = m.messages[0];
+
+        if (!msg.message) return;
+
+        const body =
+            msg.message.conversation ||
+            msg.message.extendedTextMessage?.text ||
+            "";
+        const sender = msg.key.remoteJid;
+        const pushname = msg.pushName || "Yunwa";
     });
 }
 
