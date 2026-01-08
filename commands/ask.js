@@ -39,7 +39,7 @@ module.exports = {
 
             // Kirim notif sedang proses
             await yunwa.sendMessage(sender, {
-                text: "🔍 Mencari informasi terkini...",
+                text: "🔍 LET MI TING...",
             });
 
             // Kirim typing indicator
@@ -53,7 +53,7 @@ module.exports = {
 
             // Send response
             await yunwa.sendMessage(sender, {
-                text: `🤖 *AI Assistant*\n\n${response}`,
+                text: `${response}`,
             });
 
             await yunwa.sendPresenceUpdate("paused", sender);
