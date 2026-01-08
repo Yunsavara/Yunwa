@@ -8,6 +8,12 @@ const commands = require("../commands");
 function setupMessageHandler(yunwa) {
     yunwa.ev.on("messages.upsert", async (m) => {
         try {
+            // skip old message when activate bot (avoided spam)
+            if (m.type !== "notify") {
+                console.log(chalk.gray(`[SKIP] Message type: ${m.type}`));
+                return;
+            }
+
             const msg = m.messages[0];
 
             if (!msg.message) return;
