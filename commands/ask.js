@@ -1,5 +1,3 @@
-const { askGroqWithSearch } = require("../scrape/groq");
-
 /**
  * Ask command - Chat with AI + Web Search
  * Usage: !ask <pertanyaan>
@@ -25,6 +23,20 @@ module.exports = {
                 return;
             }
 
+            // Check API keys before processing
+            if (!process.env.GROQ_API_KEY || !process.env.TAVILY_API_KEY) {
+                await yunwa.sendMessage(sender, {
+                    text:
+                        "❌ *API Keys belum di-setup!*\n\n" +
+                        "Untuk menggunakan fitur AI, owner bot harus setup API keys dulu.\n\n" +
+                        "🔑 API Keys yang dibutuhkan (100% GRATIS):\n" +
+                        "• Groq: https://console.groq.com/keys\n" +
+                        "• Tavily: https://tavily.com/\n\n" +
+                        "📖 Restart bot untuk menjalankan setup wizard.",
+                });
+                return;
+            }
+
             // Kirim notif sedang proses
             await yunwa.sendMessage(sender, {
                 text: "🔍 Mencari informasi terkini...",
@@ -33,12 +45,15 @@ module.exports = {
             // Kirim typing indicator
             await yunwa.sendPresenceUpdate("composing", sender);
 
+            // Lazy load groq module (only when actually used)
+            const { askGroqWithSearch } = require("../scrape/groq");
+
             // Ask AI dengan web search
             const response = await askGroqWithSearch(question);
 
             // Send response
             await yunwa.sendMessage(sender, {
-                text: `🤖 *AI Assistant* (with web search)\n\n${response}`,
+                text: `🤖 *AI Assistant*\n\n${response}`,
             });
 
             await yunwa.sendPresenceUpdate("paused", sender);

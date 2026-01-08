@@ -3,3 +3,10 @@
 
 # Session files
 YunwaSession/
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*

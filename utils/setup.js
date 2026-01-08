@@ -4,7 +4,6 @@ const chalk = require("chalk");
 const question = require("./question");
 
 const ENV_PATH = path.join(__dirname, "../.env");
-const ENV_EXAMPLE_PATH = path.join(__dirname, "../.env.example");
 
 /**
  * Check if .env exists and has required keys
@@ -73,7 +72,7 @@ async function runSetupWizard() {
 
     fs.writeFileSync(ENV_PATH, envContent);
 
-    console.log(chalk.green("\n✅ Setup selesai! File .env telah dibuat."));
+    console.log(chalk.green("\n✅ Setup selesai!"));
 
     if (
         groqKey.toLowerCase() === "skip" ||

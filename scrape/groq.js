@@ -1,15 +1,31 @@
 const Groq = require("groq-sdk");
-const { searchWeb } = require("./tavily");
 
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY,
-});
+let groqClient = null;
+
+/**
+ * Get or create Groq client instance (lazy initialization)
+ */
+function getGroqClient() {
+    if (!groqClient) {
+        if (!process.env.GROQ_API_KEY) {
+            throw new Error(
+                "GROQ_API_KEY tidak ditemukan. Jalankan setup wizard atau tambahkan ke file .env",
+            );
+        }
+        groqClient = new Groq({
+            apiKey: process.env.GROQ_API_KEY,
+        });
+    }
+    return groqClient;
+}
 
 /**
  * Ask Groq AI (tanpa web search)
  */
 async function askGroq(question) {
     try {
+        const groq = getGroqClient();
+
         const chatCompletion = await groq.chat.completions.create({
             messages: [
                 {
@@ -33,6 +49,9 @@ async function askGroq(question) {
         );
     } catch (error) {
         console.error("Error asking Groq:", error);
+        if (error.message.includes("GROQ_API_KEY")) {
+            throw error;
+        }
         throw new Error("Gagal mendapatkan respon dari Groq AI");
     }
 }
@@ -42,6 +61,11 @@ async function askGroq(question) {
  */
 async function askGroqWithSearch(question) {
     try {
+        const groq = getGroqClient();
+
+        // Import searchWeb only when needed
+        const { searchWeb } = require("./tavily");
+
         // 1. Search web dulu untuk dapetin data terkini
         console.log("🔍 Searching web...");
         const searchResults = await searchWeb(question);
@@ -71,6 +95,12 @@ async function askGroqWithSearch(question) {
         );
     } catch (error) {
         console.error("Error asking Groq with search:", error);
+        if (
+            error.message.includes("GROQ_API_KEY") ||
+            error.message.includes("TAVILY_API_KEY")
+        ) {
+            throw error;
+        }
         throw new Error("Gagal mendapatkan respon dari AI");
     }
 }
