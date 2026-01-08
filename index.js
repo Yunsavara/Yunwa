@@ -1,4 +1,6 @@
+require("dotenv").config();
 const chalk = require("chalk");
+const { setupCheck } = require("./utils/setup");
 const { createConnection } = require("./config/connection");
 const { setupConnectionHandler } = require("./handlers/connection-handler");
 const { setupMessageHandler } = require("./handlers/message-handler");
@@ -23,5 +25,14 @@ async function connectToWhatsapp() {
 }
 
 // Start the bot
-console.log(chalk.bgCyan.black("\n 🤖 Starting Yunwa Bot... \n"));
-connectToWhatsapp();
+async function main() {
+    console.log(chalk.bgCyan.black("\n 🤖 Starting Yunwa Bot... \n"));
+
+    // Run setup wizard if needed
+    await setupCheck();
+
+    // Start bot
+    connectToWhatsapp();
+}
+
+main();
