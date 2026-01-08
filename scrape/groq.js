@@ -38,7 +38,7 @@ async function askGroq(question) {
                     content: question,
                 },
             ],
-            model: "llama-3.1-70b-versatile",
+            model: "openai/gpt-oss-120b",
             temperature: 0.7,
             max_tokens: 1024,
         });
@@ -84,7 +84,7 @@ async function askGroqWithSearch(question) {
                     content: `Pertanyaan: ${question}\n\nHasil Web Search:\n${searchResults}\n\nJawab pertanyaan berdasarkan informasi di atas dengan jelas dan ringkas.`,
                 },
             ],
-            model: "llama-3.1-70b-versatile",
+            model: "openai/gpt-oss-120b",
             temperature: 0.7,
             max_tokens: 2048,
         });
