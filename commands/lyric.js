@@ -30,11 +30,6 @@ module.exports = {
                 return;
             }
 
-            // Kirim notif sedang mencari
-            await yunwa.sendMessage(sender, {
-                text: `🔍 Mencari lirik "${query}"...`,
-            });
-
             // Kirim typing indicator
             await yunwa.sendPresenceUpdate("composing", sender);
 
