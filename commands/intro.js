@@ -11,12 +11,12 @@ module.exports = {
 
             if (!fs.existsSync(imagePath)) {
                 await yunwa.sendMessage(sender, {
-                    text: `*Halo ${pushname}!*\n\nAku adalah *Yunwa*, asisten WhatsApp yang siap membantu kamu!\n\n*Available Commands:*\n• !ping - Test responsiveness bot\n• !hello - Menyapa kamu\n• !intro - Perkenalan bot & commands\n\nKetik command dengan prefix ! untuk menggunakannya`,
+                    text: `*Halo ${pushname}!*\n\nAku adalah *Yunwa*, asisten WhatsApp yang siap membantu kamu!\n\n*Available Commands:*\n• !intro - Perkenalan bot & commands\n• !ping - Test responsiveness bot\n• !hello - Menyapa kamu\n\nKetik command dengan prefix ! untuk menggunakannya`,
                 });
             } else {
                 const imageBuffer = fs.readFileSync(imagePath);
 
-                const caption = `*Halo ${pushname}!*\n\nAku adalah *Yunwa*, asisten WhatsApp yang siap membantu kamu!\n\n*Available Commands:*\n• !ping - Test responsiveness bot\n• !hello - Menyapa kamu\n• !intro - Perkenalan bot & commands\n\nKetik command dengan prefix ! untuk menggunakannya`;
+                const caption = `*Halo ${pushname}!*\n\nAku adalah *Yunwa*, asisten WhatsApp yang siap membantu kamu!\n\n*Available Commands:*\n• !intro - Perkenalan bot & commands\n• !ping - Test responsiveness bot\n• !hello - Menyapa kamu\n\nKetik command dengan prefix ! untuk menggunakannya`;
 
                 await yunwa.sendMessage(sender, {
                     image: imageBuffer,
