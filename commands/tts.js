@@ -58,8 +58,7 @@ async function convertToKatakana(text) {
                         "Kamu adalah expert dalam bahasa Jepang. " +
                         "Tugas: Konversi text ke dalam KATAKANA Jepang yang tepat. " +
                         "Jika input sudah dalam Jepang (Hiragana/Katakana/Kanji), biarkan saja. " +
-                        "Jika input bahasa lain (Indonesia/English), konversi fonetiknya ke Katakana. " +
-                        "HANYA output Katakana/Hiragana/Kanji, jangan ada penjelasan lain.",
+                        "Jika input bahasa lain (Indonesia/English), konversi fonetiknya ke Katakana. ",
                 },
                 {
                     role: "user",
