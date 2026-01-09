@@ -1,6 +1,9 @@
 // Store conversation history per user
 const conversationHistory = new Map();
 
+// Track which messages are from ask command (for follow-up detection)
+const askMessageIds = new Set();
+
 // Max messages to keep in history
 const MAX_HISTORY_LENGTH = 10;
 
@@ -31,6 +34,25 @@ function addToHistory(userId, role, content) {
     conversationHistory.set(userId, history);
 
     resetIdleTimer(userId);
+}
+
+/**
+ * Register message ID as ask command response (for follow-up detection)
+ */
+function registerAskMessage(messageId) {
+    askMessageIds.add(messageId);
+
+    // Auto-cleanup after 30 minutes
+    setTimeout(() => {
+        askMessageIds.delete(messageId);
+    }, IDLE_TIMEOUT);
+}
+
+/**
+ * Check if message ID is from ask command
+ */
+function isAskMessage(messageId) {
+    return askMessageIds.has(messageId);
 }
 
 /**
@@ -73,4 +95,6 @@ module.exports = {
     getHistory,
     addToHistory,
     clearHistory,
+    registerAskMessage,
+    isAskMessage,
 };

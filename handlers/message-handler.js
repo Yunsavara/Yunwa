@@ -1,5 +1,6 @@
 const chalk = require("chalk");
 const commands = require("../commands");
+const { isAskMessage } = require("../utils/conversation");
 
 // Store processed message IDs to prevent duplicate processing
 const processedMessages = new Set();
@@ -66,17 +67,22 @@ function setupMessageHandler(yunwa) {
             const sender = msg.key.remoteJid;
             const pushname = msg.pushName || "Yunwa";
 
-            // Check if this is a reply to bot's message (for follow-up)
+            // Check if this is a reply to bot's message
             const contextInfo = msg.message.extendedTextMessage?.contextInfo;
             const quotedMsg = contextInfo?.quotedMessage;
             const participant = contextInfo?.participant;
+            const quotedMsgId = contextInfo?.stanzaId;
 
-            // Reply to bot if participant is not the sender themselves
+            // Reply to bot if participant is not the sender
             const isReplyToBot =
                 quotedMsg && !body.startsWith("!") && participant !== sender;
 
-            // Handle follow-up conversation
-            if (isReplyToBot) {
+            // Check if quoted message is from ask command
+            const isReplyToAskMessage =
+                isReplyToBot && quotedMsgId && isAskMessage(quotedMsgId);
+
+            // Handle follow-up conversation (only for ask command)
+            if (isReplyToAskMessage) {
                 processedMessages.add(messageId);
                 cleanupMessageCache();
 

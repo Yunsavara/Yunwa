@@ -2,6 +2,7 @@ const {
     getHistory,
     addToHistory,
     clearHistory,
+    registerAskMessage,
 } = require("../utils/conversation");
 
 /**
@@ -94,10 +95,15 @@ module.exports = {
             addToHistory(sender, "user", question);
             addToHistory(sender, "assistant", response);
 
-            // Send response
-            await yunwa.sendMessage(sender, {
+            // Send response and register message ID for follow-up tracking
+            const sentMsg = await yunwa.sendMessage(sender, {
                 text: response,
             });
+
+            // Register this message as ask command response
+            if (sentMsg && sentMsg.key && sentMsg.key.id) {
+                registerAskMessage(sentMsg.key.id);
+            }
 
             await yunwa.sendPresenceUpdate("paused", sender);
         } catch (error) {
