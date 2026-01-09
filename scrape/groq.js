@@ -18,6 +18,7 @@ function getGroqClient() {
 
 function convertToWhatsAppFormat(text) {
     return text
+        .replace(/<br\s*\/?>/gi, "\n")
         .replace(/\|[\s\S]*?\|/g, "")
         .replace(/[\-]{3,}/g, "")
         .replace(/\*\*\*(.*?)\*\*\*/g, "*$1*")
