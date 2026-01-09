@@ -68,61 +68,57 @@ async function askGroq(question) {
 }
 
 /**
- * Ask AI to self-assess if it needs web search
- * AI will return "NEED_SEARCH" if it's uncertain or topic is too new
+ * Check if information needed is already in conversation history
+ * Returns true if needs web search, false if context is sufficient
  */
 async function checkIfNeedsWebSearch(question, history = []) {
     try {
         const groq = getGroqClient();
 
-        const today = new Date().toLocaleDateString("id-ID", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            weekday: "long",
-        });
-
         const messages = [
             {
                 role: "system",
                 content:
-                    `Kamu adalah AI assistant dengan knowledge cutoff Oktober 2023. Hari ini: ${today}. ` +
-                    `\n\nTugas: Evaluasi apakah kamu perlu web search untuk memberikan jawaban yang AKURAT, TERBARU, dan TERVERIFIKASI.` +
-                    `\n\nPertimbangkan:` +
-                    `\n- Apakah topik ini berpotensi berubah atau berkembang setelah Oktober 2023?` +
-                    `\n- Apakah pertanyaan meminta verifikasi, konfirmasi, atau pengecekan kebenaran?` +
-                    `\n- Apakah pertanyaan meminta informasi spesifik/detail yang mungkin kamu tidak tahu persis?` +
-                    `\n- Apakah pertanyaan tentang sesuatu yang terjadi/muncul setelah knowledge cutoff-mu?` +
-                    `\n- Apakah kamu merasa tingkat keyakinanmu kurang dari 90% untuk jawaban ini?` +
-                    `\n\nPrinsip utama: Jika ada kemungkinan jawabanmu bisa SALAH, OUTDATED, atau TIDAK LENGKAP, pilih YES.` +
+                    `Kamu adalah AI assistant. ` +
+                    `\n\nTugas: Evaluasi apakah informasi yang dibutuhkan untuk menjawab pertanyaan SUDAH ADA di conversation history sebelumnya.` +
+                    `\n\nBALAS "NO" jika:` +
+                    `\n- Pertanyaan bisa dijawab LENGKAP hanya dari informasi yang sudah ada di history` +
+                    `\n- Pertanyaan hanya meminta elaborasi/penjelasan ulang dari data yang sudah dibahas` +
+                    `\n- Pertanyaan tentang topik yang sudah dijelaskan sebelumnya` +
+                    `\n\nBALAS "YES" jika:` +
+                    `\n- Pertanyaan tentang topik/informasi BARU yang belum pernah dibahas` +
+                    `\n- Pertanyaan meminta data spesifik yang tidak ada di history` +
+                    `\n- Pertanyaan meminta verifikasi/konfirmasi informasi baru` +
+                    `\n- History tidak mengandung informasi yang cukup untuk jawab pertanyaan ini` +
                     `\n\nJawab HANYA: YES atau NO`,
             },
             ...history,
             {
                 role: "user",
-                content: `Pertanyaan: "${question}"\n\nApakah kamu butuh web search? YES atau NO?`,
+                content: `Pertanyaan baru: "${question}"\n\nApakah aku perlu web search untuk ini? (YES = perlu search, NO = cukup dari history)`,
             },
         ];
 
         const chatCompletion = await groq.chat.completions.create({
             messages: messages,
             model: "openai/gpt-oss-120b",
-            temperature: 0.2, // Slightly higher for better reasoning
+            temperature: 0.1,
             max_tokens: 10,
         });
 
         const response =
             chatCompletion.choices[0]?.message?.content?.trim().toUpperCase() ||
-            "YES"; // Default to YES if no response
+            "YES";
 
+        const needsSearch = response.includes("YES");
         console.log(
-            `AI decision: ${response.includes("YES") ? "NEED web search" : "Context enough"}`,
+            `AI evaluated history: ${needsSearch ? "Need NEW data from web" : "Enough data in context"}`,
         );
 
-        return response.includes("YES");
+        return needsSearch;
     } catch (error) {
         console.error("Error checking if needs web search:", error);
-        // If error, default to YES (safer to search than give wrong answer)
+        // If error, default to YES (use web search to be safe)
         return true;
     }
 }
