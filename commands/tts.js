@@ -4,8 +4,18 @@ const path = require("path");
 
 /**
  * TTS Command - Text to Speech using Edge TTS
- * Usage: !tts [text] or !tts [voice] [text]
+ * Usage: !tts [voice] [text]
+ * Voice codes: idp, idl, enp, enl
  */
+
+// Hardcoded voice mappings
+const VOICE_MAP = {
+    idp: "id-ID-GadisNeural",
+    idl: "id-ID-ArdiNeural",
+    enp: "en-US-AriaNeural",
+    enl: "en-US-GuyNeural",
+};
+
 module.exports = {
     name: "tts",
     description: "Convert text to speech (Edge TTS)",
@@ -23,57 +33,20 @@ module.exports = {
             if (!text) {
                 await yunwa.sendMessage(sender, {
                     text:
-                        "🔊 *Text to Speech*\n\n" +
+                        "*Text to Speech*\n\n" +
                         "Cara pakai:\n" +
-                        "• !tts [text]\n" +
-                        "• !tts [voice] [text]\n\n" +
+                        "!tts [voice] [text]\n\n" +
+                        "Voice codes:\n" +
+                        "• *idp* - Indonesia Perempuan\n" +
+                        "• *idl* - Indonesia Laki-laki\n" +
+                        "• *enp* - English Female\n" +
+                        "• *enl* - English Male\n\n" +
                         "Contoh:\n" +
-                        "• !tts Halo, apa kabar?\n" +
-                        "• !tts id-ID-ArdiNeural Selamat pagi!\n" +
-                        "• !tts en-US-AriaNeural Hello world!\n\n" +
-                        "Voice default: id-ID-GadisNeural\n\n" +
-                        "Kirim *!tts voices* untuk list voice",
+                        "• !tts idp Halo, apa kabar?\n" +
+                        "• !tts idl Selamat pagi!\n" +
+                        "• !tts enp Hello world!\n" +
+                        "• !tts enl Good morning!",
                 });
-                return;
-            }
-
-            // Handle voice list request
-            if (text.toLowerCase() === "voices") {
-                await yunwa.sendPresenceUpdate("composing", sender);
-
-                const tts = new EdgeTTS();
-                const voices = await tts.getVoices();
-
-                // Filter Indonesian voices
-                const idVoices = voices.filter((v) =>
-                    v.Locale.startsWith("id-"),
-                );
-
-                let voiceList = "🎤 *Voice List*\n\n";
-                voiceList += "*Indonesian Voices:*\n";
-                idVoices.forEach((v) => {
-                    voiceList += `• ${v.ShortName} (${v.Gender})\n`;
-                });
-
-                voiceList += "\n*Popular English Voices:*\n";
-                const popularEN = [
-                    "en-US-AriaNeural",
-                    "en-US-GuyNeural",
-                    "en-US-JennyNeural",
-                    "en-GB-SoniaNeural",
-                    "en-GB-RyanNeural",
-                ];
-
-                popularEN.forEach((name) => {
-                    const voice = voices.find((v) => v.ShortName === name);
-                    if (voice) {
-                        voiceList += `• ${voice.ShortName} (${voice.Gender})\n`;
-                    }
-                });
-
-                voiceList += "\nTotal voices: " + voices.length;
-
-                await yunwa.sendMessage(sender, { text: voiceList });
                 return;
             }
 
@@ -81,15 +54,25 @@ module.exports = {
 
             const tts = new EdgeTTS();
 
-            // Parse voice and text
-            let voice = "id-ID-GadisNeural"; // Default Indonesian female voice
+            // Parse voice code and text
+            const words = text.split(" ");
+            const voiceCode = words[0].toLowerCase();
+
+            let voice = VOICE_MAP.idp; // Default: Indonesian female
             let textToSpeak = text;
 
-            // Check if first word is a voice name
-            const words = text.split(" ");
-            if (words[0].includes("-") && words[0].includes("Neural")) {
-                voice = words[0];
+            // Check if first word is a valid voice code
+            if (VOICE_MAP[voiceCode]) {
+                voice = VOICE_MAP[voiceCode];
                 textToSpeak = words.slice(1).join(" ");
+            }
+
+            // Validate text
+            if (!textToSpeak.trim()) {
+                await yunwa.sendMessage(sender, {
+                    text: "❌ Text tidak boleh kosong!\n\nContoh: !tts idp Halo dunia",
+                });
+                return;
             }
 
             // Synthesize speech
