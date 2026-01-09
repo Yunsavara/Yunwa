@@ -1,3 +1,6 @@
+// Suppress noisy logs first
+require("./utils/logger");
+
 require("dotenv").config();
 const chalk = require("chalk");
 const { setupCheck } = require("./utils/setup");
@@ -17,16 +20,16 @@ async function connectToWhatsapp() {
         setupConnectionHandler(yunwa, connectToWhatsapp);
         setupMessageHandler(yunwa);
 
-        console.log(chalk.green("✓ Bot handlers initialized successfully"));
+        console.log(chalk.green("Bot handlers initialized successfully"));
     } catch (error) {
-        console.error(chalk.red("✗ Error connecting to WhatsApp:"), error);
+        console.error(chalk.red("Error connecting to WhatsApp:"), error);
         process.exit(1);
     }
 }
 
 // Start the bot
 async function main() {
-    console.log(chalk.bgCyan.black("\n 🤖 Starting Yunwa Bot... \n"));
+    console.log(chalk.bgCyan.black("\n Starting Yunwa Bot... \n"));
 
     // Run setup wizard if needed
     await setupCheck();
