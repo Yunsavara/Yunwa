@@ -115,15 +115,42 @@ async function askGroqWithContext(question, history = []) {
     try {
         const groq = getGroqClient();
 
+        // Deteksi jika input cuma konfirmasi/reaksi singkat
+        const shortResponses = [
+            "iya",
+            "oh",
+            "oke",
+            "ok",
+            "wah",
+            "hmm",
+            "ic",
+            "i see",
+            "emang",
+            "memang",
+            "bener",
+            "betul",
+            "sip",
+        ];
+        const isShortResponse =
+            question.trim().split(/\s+/).length <= 3 &&
+            shortResponses.some((word) =>
+                question.toLowerCase().includes(word),
+            );
+
+        const systemContent = isShortResponse
+            ? "Kamu asisten AI. User baru saja memberi reaksi singkat/konfirmasi. " +
+              "Jangan jelaskan hal yang tidak ditanyakan. " +
+              "Cukup respon natural dan tunggu pertanyaan berikutnya jika ada."
+            : "Kamu asisten AI yang menjawab dengan jelas dan padat. " +
+              "Fokus pada pertanyaan user. Gunakan konteks sebelumnya jika relevan. " +
+              "Jawab dalam bahasa Indonesia. Gunakan *bold* untuk penekanan penting saja.";
+
         const messages = [
             {
                 role: "system",
-                content:
-                    "Kamu asisten AI yang menjawab dengan jelas dan padat. " +
-                    "Fokus pada pertanyaan user. Gunakan konteks sebelumnya jika relevan. " +
-                    "Jawab dalam bahasa Indonesia. Gunakan *bold* untuk penekanan penting saja.",
+                content: systemContent,
             },
-            ...history.slice(-6), // Batasi history, ambil 6 message terakhir aja
+            ...history.slice(-6),
             {
                 role: "user",
                 content: question,
@@ -134,7 +161,7 @@ async function askGroqWithContext(question, history = []) {
             messages: messages,
             model: "openai/gpt-oss-120b",
             temperature: 0.3,
-            max_tokens: 1500,
+            max_tokens: isShortResponse ? 150 : 1500, // Batasi token untuk response singkat
         });
 
         const response =
