@@ -41,7 +41,9 @@ async function askGroq(question) {
                 {
                     role: "system",
                     content:
-                        "Kamu adalah asisten AI yang helpful dan ramah. Jawab dengan bahasa Indonesia yang natural. Gunakan bold untuk penekanan. Jangan gunakan format table. Gunakan paragraf, bullet points, atau numbering.",
+                        "Kamu asisten AI yang helpful dan ramah. " +
+                        "Jawab dengan jelas dan padat. " +
+                        "Gunakan bahasa Indonesia yang natural.",
                 },
                 {
                     role: "user",
@@ -49,8 +51,8 @@ async function askGroq(question) {
                 },
             ],
             model: "openai/gpt-oss-120b",
-            temperature: 0.7,
-            max_tokens: 1024,
+            temperature: 0.5,
+            max_tokens: 1500,
         });
 
         const response =
@@ -67,10 +69,6 @@ async function askGroq(question) {
     }
 }
 
-/**
- * Check if information needed is already in conversation history
- * Returns true if needs web search, false if context is sufficient
- */
 async function checkIfNeedsWebSearch(question, history = []) {
     try {
         const groq = getGroqClient();
@@ -79,23 +77,14 @@ async function checkIfNeedsWebSearch(question, history = []) {
             {
                 role: "system",
                 content:
-                    `Kamu adalah AI assistant. ` +
-                    `\n\nTugas: Evaluasi apakah informasi yang dibutuhkan untuk menjawab pertanyaan SUDAH ADA di conversation history sebelumnya.` +
-                    `\n\nBALAS "NO" jika:` +
-                    `\n- Pertanyaan bisa dijawab LENGKAP hanya dari informasi yang sudah ada di history` +
-                    `\n- Pertanyaan hanya meminta elaborasi/penjelasan ulang dari data yang sudah dibahas` +
-                    `\n- Pertanyaan tentang topik yang sudah dijelaskan sebelumnya` +
-                    `\n\nBALAS "YES" jika:` +
-                    `\n- Pertanyaan tentang topik/informasi BARU yang belum pernah dibahas` +
-                    `\n- Pertanyaan meminta data spesifik yang tidak ada di history` +
-                    `\n- Pertanyaan meminta verifikasi/konfirmasi informasi baru` +
-                    `\n- History tidak mengandung informasi yang cukup untuk jawab pertanyaan ini` +
-                    `\n\nJawab HANYA: YES atau NO`,
+                    "Jawab YES jika pertanyaan butuh data baru dari web. " +
+                    "Jawab NO jika cukup dari history. " +
+                    "Jawab HANYA: YES atau NO",
             },
-            ...history,
+            ...history.slice(-6),
             {
                 role: "user",
-                content: `Pertanyaan baru: "${question}"\n\nApakah aku perlu web search untuk ini? (YES = perlu search, NO = cukup dari history)`,
+                content: `Pertanyaan: "${question}"\nButuh web search?`,
             },
         ];
 
@@ -103,22 +92,21 @@ async function checkIfNeedsWebSearch(question, history = []) {
             messages: messages,
             model: "openai/gpt-oss-120b",
             temperature: 0.1,
-            max_tokens: 10,
+            max_tokens: 5,
         });
 
         const response =
             chatCompletion.choices[0]?.message?.content?.trim().toUpperCase() ||
             "YES";
-
         const needsSearch = response.includes("YES");
+
         console.log(
-            `AI evaluated history: ${needsSearch ? "Need NEW data from web" : "Enough data in context"}`,
+            `AI evaluated: ${needsSearch ? "Need web search" : "Use context"}`,
         );
 
         return needsSearch;
     } catch (error) {
         console.error("Error checking if needs web search:", error);
-        // If error, default to YES (use web search to be safe)
         return true;
     }
 }
@@ -131,29 +119,22 @@ async function askGroqWithContext(question, history = []) {
             {
                 role: "system",
                 content:
-                    "Kamu adalah asisten AI yang helpful dan ramah. " +
-                    "PENTING: Ini adalah pertanyaan LANJUTAN dari conversation sebelumnya. " +
-                    "Jawab berdasarkan KONTEKS dan TOPIK yang sudah dibahas. " +
-                    "JANGAN keluar dari topik atau memulai pembahasan baru. " +
-                    "Tetap KONSISTEN dengan informasi yang sudah diberikan sebelumnya. " +
-                    "Jawab dengan bahasa Indonesia yang natural. " +
-                    "Gunakan bold untuk penekanan. Jangan gunakan format table. " +
-                    "Gunakan paragraf, bullet points, atau numbering.",
+                    "Kamu asisten AI yang menjawab dengan jelas dan padat. " +
+                    "Fokus pada pertanyaan user. Gunakan konteks sebelumnya jika relevan. " +
+                    "Jawab dalam bahasa Indonesia. Gunakan *bold* untuk penekanan penting saja.",
             },
-            ...history,
+            ...history.slice(-6), // Batasi history, ambil 6 message terakhir aja
             {
                 role: "user",
                 content: question,
             },
         ];
 
-        console.log(`Processing with context (${history.length} messages)`);
-
         const chatCompletion = await groq.chat.completions.create({
             messages: messages,
             model: "openai/gpt-oss-120b",
-            temperature: 0.7,
-            max_tokens: 1024,
+            temperature: 0.3,
+            max_tokens: 1500,
         });
 
         const response =
@@ -177,40 +158,25 @@ async function askGroqWithSearch(question, history = []) {
 
         console.log("Processing with AI...");
 
-        const systemPrompt =
-            history.length > 0
-                ? "Kamu adalah asisten AI yang helpful. " +
-                  "PENTING: Ini adalah pertanyaan LANJUTAN. Perhatikan KONTEKS conversation sebelumnya. " +
-                  "Gunakan hasil web search untuk menjawab, tapi tetap KONSISTEN dengan topik yang sudah dibahas. " +
-                  "Jangan abaikan atau bertentangan dengan informasi sebelumnya. " +
-                  "Jawab berdasarkan hasil web search DAN context conversation. " +
-                  "Cite sumber dengan format [1], [2], dll. " +
-                  "Tampilkan daftar sumber lengkap dengan URL di akhir. " +
-                  "Jawab dengan bahasa Indonesia yang natural. " +
-                  "Gunakan bold untuk penekanan. Jangan gunakan table."
-                : "Kamu adalah asisten AI yang helpful. " +
-                  "Jawab pertanyaan berdasarkan hasil web search. " +
-                  "Jawab dengan bahasa Indonesia yang natural. " +
-                  "Cite sumber dengan format [1], [2], dll. " +
-                  "Tampilkan daftar sumber lengkap dengan URL di akhir. " +
-                  "Gunakan bold untuk penekanan. Jangan gunakan table.";
-
         const messages = [
             {
                 role: "system",
-                content: systemPrompt,
+                content:
+                    "Kamu asisten AI yang menjawab berdasarkan web search. " +
+                    "Jawab jelas dan padat. Cite sumber dengan [1], [2]. " +
+                    "Tampilkan daftar sumber di akhir.",
             },
-            ...history,
+            ...history.slice(-4), // Ambil 4 message terakhir
             {
                 role: "user",
-                content: `Pertanyaan: ${question}\n\nHasil Web Search:\n${searchResults}\n\nJawab berdasarkan informasi di atas. Cite sumber dengan [1], [2], dll. Tampilkan daftar sumber dengan URL di akhir.`,
+                content: `${question}\n\nWeb Search:\n${searchResults}`,
             },
         ];
 
         const chatCompletion = await groq.chat.completions.create({
             messages: messages,
             model: "openai/gpt-oss-120b",
-            temperature: 0.7,
+            temperature: 0.3,
             max_tokens: 2048,
         });
 
