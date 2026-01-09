@@ -7,14 +7,8 @@ const MESSAGE_CACHE_SIZE = 1000;
 
 // Cooldown tracking per user
 const userCooldowns = new Map();
-const COOLDOWN_TIME = 2000; // 2 seconds cooldown per command
+const COOLDOWN_TIME = 2000;
 
-// Store bot's own number
-let botNumber = null;
-
-/**
- * Clean up old message IDs to prevent memory leak
- */
 function cleanupMessageCache() {
     if (processedMessages.size > MESSAGE_CACHE_SIZE) {
         const idsToDelete = Array.from(processedMessages).slice(
@@ -25,9 +19,6 @@ function cleanupMessageCache() {
     }
 }
 
-/**
- * Check if user is on cooldown
- */
 function isOnCooldown(userId, commandName) {
     const key = `${userId}:${commandName}`;
     const cooldownEnd = userCooldowns.get(key);
@@ -39,9 +30,6 @@ function isOnCooldown(userId, commandName) {
     return false;
 }
 
-/**
- * Set cooldown for user
- */
 function setCooldown(userId, commandName) {
     const key = `${userId}:${commandName}`;
     userCooldowns.set(key, Date.now() + COOLDOWN_TIME);
@@ -51,38 +39,22 @@ function setCooldown(userId, commandName) {
     }, COOLDOWN_TIME);
 }
 
-/**
- * Handle incoming WhatsApp messages
- * @param {Object} yunwa - WhatsApp socket instance
- */
 function setupMessageHandler(yunwa) {
-    // Get bot's own number once
-    if (!botNumber && yunwa.user?.id) {
-        botNumber = yunwa.user.id.split(":")[0] + "@s.whatsapp.net";
-        console.log(chalk.blue(`[BOT] Number detected: ${botNumber}`));
-    }
-
     yunwa.ev.on("messages.upsert", async (m) => {
         try {
-            // skip old message when activate bot (avoided spam)
+            // Skip old messages
             if (m.type !== "notify") {
-                console.log(chalk.gray(`[SKIP] Message type: ${m.type}`));
                 return;
             }
 
             const msg = m.messages[0];
 
             if (!msg.message) return;
-
-            // Ignore pesan dari bot sendiri
             if (msg.key.fromMe) return;
 
-            // ANTI-SPAM: Check if message already processed (deduplication)
+            // Anti-spam: Check if message already processed
             const messageId = msg.key.id;
             if (processedMessages.has(messageId)) {
-                console.log(
-                    chalk.gray(`[SKIP] Duplicate message: ${messageId}`),
-                );
                 return;
             }
 
@@ -94,130 +66,74 @@ function setupMessageHandler(yunwa) {
             const sender = msg.key.remoteJid;
             const pushname = msg.pushName || "Yunwa";
 
-            // ✅ CHECK: Is this a reply to bot's message? (for follow-up)
+            // Check if this is a reply to bot's message (for follow-up)
             const contextInfo = msg.message.extendedTextMessage?.contextInfo;
             const quotedMsg = contextInfo?.quotedMessage;
             const participant = contextInfo?.participant;
 
-            // Check if reply is to bot's message
-            // In private chat: participant will be bot's number or undefined
-            // We need to check if it's NOT the sender's number (user)
+            // Reply to bot if participant is not the sender themselves
             const isReplyToBot =
-                quotedMsg && !body.startsWith("!") && participant !== sender; // Participant is not the user themselves
+                quotedMsg && !body.startsWith("!") && participant !== sender;
 
-            console.log(chalk.gray("=== DEBUG INFO ==="));
-            console.log(chalk.gray("Sender:", sender));
-            console.log(chalk.gray("Participant:", participant));
-            console.log(chalk.gray("Bot number:", botNumber));
-            console.log(chalk.gray("Has quoted:", !!quotedMsg));
-            console.log(chalk.gray("Body:", body));
-            console.log(
-                chalk.gray("Participant !== Sender:", participant !== sender),
-            );
-            console.log(chalk.gray("Is reply to bot:", isReplyToBot));
-            console.log(chalk.gray("=================="));
-
-            // If reply to bot, treat as !ask follow-up
+            // Handle follow-up conversation
             if (isReplyToBot) {
-                console.log(
-                    chalk.magenta(
-                        `[FOLLOW-UP] Reply to bot detected from ${pushname}: "${body}"`,
-                    ),
-                );
-
-                // Mark as processed
                 processedMessages.add(messageId);
                 cleanupMessageCache();
 
-                // Check cooldown for ask command
                 if (isOnCooldown(sender, "ask")) {
-                    console.log(
-                        chalk.yellow(
-                            `[COOLDOWN] ${pushname} is on cooldown for 'ask'`,
-                        ),
-                    );
                     return;
                 }
 
-                // Set cooldown
                 setCooldown(sender, "ask");
 
-                // Execute ask command with reply context
                 const askCommand = commands["ask"];
                 if (askCommand) {
                     try {
                         await askCommand.execute(yunwa, msg, sender, pushname);
-                        console.log(
-                            chalk.green(`✓ Follow-up conversation processed`),
-                        );
                     } catch (error) {
-                        console.error(
-                            chalk.red(`✗ Error in follow-up conversation:`),
-                            error,
-                        );
-                        await yunwa.sendMessage(sender, {
-                            text: "❌ Terjadi error saat follow-up!",
-                        });
+                        console.error("Error in follow-up:", error);
                     }
                 }
                 return;
             }
 
-            // prefix bot Yunwa
+            // Handle regular commands
             if (!body.startsWith("!")) return;
 
-            // Split command dan ambil kata pertama saja sebagai command name
             const args = body.slice(1).trim().split(/ +/);
             const commandName = args[0].toLowerCase();
 
-            // ANTI-SPAM: Check cooldown
             if (isOnCooldown(sender, commandName)) {
-                console.log(
-                    chalk.yellow(
-                        `[COOLDOWN] ${pushname} is on cooldown for '${commandName}'`,
-                    ),
-                );
                 return;
             }
 
-            // Mark message as processed
             processedMessages.add(messageId);
             cleanupMessageCache();
-
-            // Set cooldown
             setCooldown(sender, commandName);
 
-            // log inputed message (cuma yang pakai prefix !)
             console.log(
-                chalk.cyan(
-                    `✓ Perintah diterima: ${commandName} dari ${pushname}`,
-                ),
+                chalk.cyan(`Command received: ${commandName} from ${pushname}`),
             );
 
-            // Execute command
             const command = commands[commandName];
 
             if (command) {
                 try {
                     await command.execute(yunwa, msg, sender, pushname);
                     console.log(
-                        chalk.green(`✓ Command '${commandName}' executed`),
+                        chalk.green(`Command '${commandName}' executed`),
                     );
                 } catch (error) {
                     console.error(
-                        chalk.red(
-                            `✗ Error executing command '${commandName}':`,
-                        ),
+                        chalk.red(`Error executing '${commandName}':`),
                         error,
                     );
                     await yunwa.sendMessage(sender, {
-                        text: "❌ Terjadi error saat menjalankan command!",
+                        text: "Terjadi error saat menjalankan command!",
                     });
                 }
             } else {
-                console.log(
-                    chalk.yellow(`⚠ Command '${commandName}' tidak dikenali`),
-                );
+                console.log(chalk.yellow(`Command '${commandName}' not found`));
             }
         } catch (error) {
             console.error(chalk.red("Error handling message:"), error);
