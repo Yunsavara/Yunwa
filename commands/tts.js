@@ -13,33 +13,33 @@ const { getGroqClient } = require("../scrape/groq");
 const VOICE_MAP = {
     idp: {
         voice: "id-ID-GadisNeural",
-        pitch: 0,
-        rate: 0,
+        options: {},
     },
     idl: {
         voice: "id-ID-ArdiNeural",
-        pitch: 0,
-        rate: 0,
+        options: {},
     },
     enp: {
         voice: "en-US-AriaNeural",
-        pitch: 0,
-        rate: 0,
+        options: {},
     },
     enl: {
         voice: "en-US-GuyNeural",
-        pitch: 0,
-        rate: 0,
+        options: {},
     },
     jpp: {
         voice: "ja-JP-NanamiNeural",
-        pitch: "-10Hz",
-        rate: "-15%",
+        options: {
+            pitch: -10,
+            rate: -15,
+        },
     },
     jpl: {
         voice: "ja-JP-KeitaNeural",
-        pitch: "-10Hz",
-        rate: "0%",
+        options: {
+            pitch: -10,
+            rate: 0,
+        },
     },
 };
 
@@ -58,7 +58,8 @@ async function convertToKatakana(text) {
                         "Kamu adalah expert dalam bahasa Jepang. " +
                         "Tugas: Konversi text ke dalam KATAKANA Jepang yang tepat. " +
                         "Jika input sudah dalam Jepang (Hiragana/Katakana/Kanji), biarkan saja. " +
-                        "Jika input bahasa lain (Indonesia/English), konversi fonetiknya ke Katakana. ",
+                        "Jika input bahasa lain (Indonesia/English), konversi fonetiknya ke Katakana. " +
+                        "HANYA output Katakana/Hiragana/Kanji, jangan ada penjelasan lain.",
                 },
                 {
                     role: "user",
@@ -98,7 +99,7 @@ module.exports = {
             if (!text) {
                 await yunwa.sendMessage(sender, {
                     text:
-                        "*Text to Speech*\n\n" +
+                        "🔊 *Text to Speech*\n\n" +
                         "Cara pakai:\n" +
                         "!tts [voice] [text]\n\n" +
                         "Voice codes:\n" +
@@ -106,8 +107,8 @@ module.exports = {
                         "• *idl* - Indonesia Laki-laki\n" +
                         "• *enp* - English Female\n" +
                         "• *enl* - English Male\n" +
-                        "• *jpp* - Japanese Female (Anime Waifu)\n" +
-                        "• *jpl* - Japanese Male (Anime Husbando) ⚔️\n\n" +
+                        "• *jpp* - Japanese Female \n" +
+                        "• *jpl* - Japanese Male \n\n" +
                         "Contoh:\n" +
                         "• !tts idp Halo, apa kabar?\n" +
                         "• !tts enp Hello world!\n" +
@@ -148,19 +149,37 @@ module.exports = {
             // Convert to Katakana if Japanese voice
             if (isJapanese && process.env.GROQ_API_KEY) {
                 console.log("Converting to Katakana...");
-                textToSpeak = await convertToKatakana(textToSpeak);
+                try {
+                    textToSpeak = await convertToKatakana(textToSpeak);
+                } catch (err) {
+                    console.error("Katakana conversion failed:", err);
+                    // Continue with original text
+                }
             }
 
-            // Synthesize speech with options
-            const synthesisOptions = {};
-            if (voiceConfig.pitch) synthesisOptions.pitch = voiceConfig.pitch;
-            if (voiceConfig.rate) synthesisOptions.rate = voiceConfig.rate;
+            console.log(`Synthesizing with voice: ${voiceConfig.voice}`);
+            console.log(`Text: "${textToSpeak}"`);
+            console.log(`Options:`, voiceConfig.options);
 
-            await tts.synthesize(
-                textToSpeak,
-                voiceConfig.voice,
-                synthesisOptions,
-            );
+            // Synthesize speech with options
+            try {
+                if (Object.keys(voiceConfig.options).length > 0) {
+                    await tts.synthesize(
+                        textToSpeak,
+                        voiceConfig.voice,
+                        voiceConfig.options,
+                    );
+                } else {
+                    await tts.synthesize(textToSpeak, voiceConfig.voice);
+                }
+            } catch (synthError) {
+                console.error("Synthesis error:", synthError);
+                // Try without options as fallback
+                console.log("Retrying without options...");
+                await tts.synthesize(textToSpeak, voiceConfig.voice);
+            }
+
+            console.log("Synthesis completed successfully");
 
             // Create temp directory if not exists
             const tempDir = path.join(__dirname, "../temp");
@@ -172,6 +191,8 @@ module.exports = {
             const timestamp = Date.now();
             const outputPath = path.join(tempDir, `tts_${timestamp}`);
             const filePath = await tts.toFile(outputPath);
+
+            console.log(`Audio saved to: ${filePath}`);
 
             // Send audio
             await yunwa.sendMessage(sender, {
@@ -186,8 +207,12 @@ module.exports = {
             await yunwa.sendPresenceUpdate("paused", sender);
         } catch (error) {
             console.error("Error in tts command:", error);
+            console.error("Error stack:", error.stack);
             await yunwa.sendMessage(sender, {
-                text: "❌ Error: " + (error.message || "Gagal membuat voice"),
+                text:
+                    "❌ Error: " +
+                    (error.message || "Gagal membuat voice") +
+                    "\n\nCoba lagi atau gunakan voice lain.",
             });
         }
     },
