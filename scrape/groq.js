@@ -131,7 +131,14 @@ async function askGroqWithContext(question, history = []) {
             {
                 role: "system",
                 content:
-                    "Kamu adalah asisten AI yang helpful dan ramah. Jawab dengan bahasa Indonesia yang natural. Gunakan bold untuk penekanan. Jangan gunakan format table. Gunakan paragraf, bullet points, atau numbering.",
+                    "Kamu adalah asisten AI yang helpful dan ramah. " +
+                    "PENTING: Ini adalah pertanyaan LANJUTAN dari conversation sebelumnya. " +
+                    "Jawab berdasarkan KONTEKS dan TOPIK yang sudah dibahas. " +
+                    "JANGAN keluar dari topik atau memulai pembahasan baru. " +
+                    "Tetap KONSISTEN dengan informasi yang sudah diberikan sebelumnya. " +
+                    "Jawab dengan bahasa Indonesia yang natural. " +
+                    "Gunakan bold untuk penekanan. Jangan gunakan format table. " +
+                    "Gunakan paragraf, bullet points, atau numbering.",
             },
             ...history,
             {
@@ -170,15 +177,28 @@ async function askGroqWithSearch(question, history = []) {
 
         console.log("Processing with AI...");
 
+        const systemPrompt =
+            history.length > 0
+                ? "Kamu adalah asisten AI yang helpful. " +
+                  "PENTING: Ini adalah pertanyaan LANJUTAN. Perhatikan KONTEKS conversation sebelumnya. " +
+                  "Gunakan hasil web search untuk menjawab, tapi tetap KONSISTEN dengan topik yang sudah dibahas. " +
+                  "Jangan abaikan atau bertentangan dengan informasi sebelumnya. " +
+                  "Jawab berdasarkan hasil web search DAN context conversation. " +
+                  "Cite sumber dengan format [1], [2], dll. " +
+                  "Tampilkan daftar sumber lengkap dengan URL di akhir. " +
+                  "Jawab dengan bahasa Indonesia yang natural. " +
+                  "Gunakan bold untuk penekanan. Jangan gunakan table."
+                : "Kamu adalah asisten AI yang helpful. " +
+                  "Jawab pertanyaan berdasarkan hasil web search. " +
+                  "Jawab dengan bahasa Indonesia yang natural. " +
+                  "Cite sumber dengan format [1], [2], dll. " +
+                  "Tampilkan daftar sumber lengkap dengan URL di akhir. " +
+                  "Gunakan bold untuk penekanan. Jangan gunakan table.";
+
         const messages = [
             {
                 role: "system",
-                content:
-                    "Kamu adalah asisten AI yang helpful. Jawab pertanyaan berdasarkan hasil web search. " +
-                    "Jawab dengan bahasa Indonesia yang natural. " +
-                    "Cite sumber dengan format [1], [2], dll. " +
-                    "Tampilkan daftar sumber lengkap dengan URL di akhir. " +
-                    "Gunakan bold untuk penekanan. Jangan gunakan table.",
+                content: systemPrompt,
             },
             ...history,
             {
