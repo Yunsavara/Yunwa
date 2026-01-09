@@ -9,6 +9,9 @@ const MESSAGE_CACHE_SIZE = 1000;
 const userCooldowns = new Map();
 const COOLDOWN_TIME = 2000; // 2 seconds cooldown per command
 
+// Store bot's own number
+let botNumber = null;
+
 /**
  * Clean up old message IDs to prevent memory leak
  */
@@ -53,6 +56,12 @@ function setCooldown(userId, commandName) {
  * @param {Object} yunwa - WhatsApp socket instance
  */
 function setupMessageHandler(yunwa) {
+    // Get bot's own number once
+    if (!botNumber && yunwa.user?.id) {
+        botNumber = yunwa.user.id.split(":")[0] + "@s.whatsapp.net";
+        console.log(chalk.blue(`[BOT] Number detected: ${botNumber}`));
+    }
+
     yunwa.ev.on("messages.upsert", async (m) => {
         try {
             // skip old message when activate bot (avoided spam)
@@ -88,32 +97,31 @@ function setupMessageHandler(yunwa) {
             // ✅ CHECK: Is this a reply to bot's message? (for follow-up)
             const contextInfo = msg.message.extendedTextMessage?.contextInfo;
             const quotedMsg = contextInfo?.quotedMessage;
+            const participant = contextInfo?.participant;
 
-            // 🔍 PROPER CHECK: Reply to bot if quoted message has key.fromMe = true
-            const quotedKey = contextInfo?.stanzaId; // Message ID yang di-quote
+            // Check if reply is to bot's message
+            // In private chat: participant will be bot's number or undefined
+            // We need to check if it's NOT the sender's number (user)
             const isReplyToBot =
-                quotedMsg && contextInfo?.participant === undefined;
-
-            // Alternative check: Jika ada participant, berarti reply ke user, bukan bot
-            const isReplyToBotMessage =
-                quotedMsg && !body.startsWith("!") && !contextInfo?.participant;
+                quotedMsg && !body.startsWith("!") && participant !== sender; // Participant is not the user themselves
 
             console.log(chalk.gray("=== DEBUG INFO ==="));
+            console.log(chalk.gray("Sender:", sender));
+            console.log(chalk.gray("Participant:", participant));
+            console.log(chalk.gray("Bot number:", botNumber));
             console.log(chalk.gray("Has quoted:", !!quotedMsg));
+            console.log(chalk.gray("Body:", body));
             console.log(
-                chalk.gray("Has participant:", contextInfo?.participant),
+                chalk.gray("Participant !== Sender:", participant !== sender),
             );
-            console.log(
-                chalk.gray("Body starts with !:", body.startsWith("!")),
-            );
-            console.log(chalk.gray("Is reply to bot:", isReplyToBotMessage));
+            console.log(chalk.gray("Is reply to bot:", isReplyToBot));
             console.log(chalk.gray("=================="));
 
             // If reply to bot, treat as !ask follow-up
-            if (isReplyToBotMessage) {
+            if (isReplyToBot) {
                 console.log(
                     chalk.magenta(
-                        `[FOLLOW-UP] Detected reply to bot from ${pushname}: "${body}"`,
+                        `[FOLLOW-UP] Reply to bot detected from ${pushname}: "${body}"`,
                     ),
                 );
 
