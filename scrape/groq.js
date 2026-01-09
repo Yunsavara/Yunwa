@@ -2,9 +2,6 @@ const Groq = require("groq-sdk");
 
 let groqClient = null;
 
-/**
- * Get or create Groq client instance (lazy initialization)
- */
 function getGroqClient() {
     if (!groqClient) {
         if (!process.env.GROQ_API_KEY) {
@@ -19,38 +16,22 @@ function getGroqClient() {
     return groqClient;
 }
 
-/**
- * Convert markdown formatting to WhatsApp formatting
- */
 function convertToWhatsAppFormat(text) {
-    return (
-        text
-            // Remove tables
-            .replace(/\|[\s\S]*?\|/g, "")
-            .replace(/[\-]{3,}/g, "")
-            // Convert bold
-            .replace(/\*\*\*(.*?)\*\*\*/g, "*$1*")
-            .replace(/\*\*(.*?)\*\*/g, "*$1*")
-            // Convert italic
-            .replace(/\_\_(.*?)\_\_/g, "_$1_")
-            // Strikethrough
-            .replace(/\~\~(.*?)\~\~/g, "~$1~")
-            // Remove code blocks
-            .replace(/\`\`\`[\s\S]*?\`\`\`/g, "")
-            .replace(/\`(.*?)\`/g, "$1")
-            // Convert links
-            .replace(/\[(.*?)\]\((.*?)\)/g, "$1: $2")
-            // Remove headers
-            .replace(/^#+\s/gm, "")
-            // Clean up newlines
-            .replace(/\n{3,}/g, "\n\n")
-            .trim()
-    );
+    return text
+        .replace(/\|[\s\S]*?\|/g, "")
+        .replace(/[\-]{3,}/g, "")
+        .replace(/\*\*\*(.*?)\*\*\*/g, "*$1*")
+        .replace(/\*\*(.*?)\*\*/g, "*$1*")
+        .replace(/\_\_(.*?)\_\_/g, "_$1_")
+        .replace(/\~\~(.*?)\~\~/g, "~$1~")
+        .replace(/\`\`\`[\s\S]*?\`\`\`/g, "")
+        .replace(/\`(.*?)\`/g, "$1")
+        .replace(/\[(.*?)\]\((.*?)\)/g, "$1: $2")
+        .replace(/^#+\s/gm, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
 }
 
-/**
- * Ask Groq AI (without web search)
- */
 async function askGroq(question) {
     try {
         const groq = getGroqClient();
@@ -87,8 +68,59 @@ async function askGroq(question) {
 }
 
 /**
- * Ask Groq AI with conversation context (for follow-up)
+ * Ask AI to self-assess if it needs web search
+ * AI will return "NEED_SEARCH" if it's uncertain or topic is too new
  */
+async function checkIfNeedsWebSearch(question, history = []) {
+    try {
+        const groq = getGroqClient();
+
+        const today = new Date().toLocaleDateString("id-ID", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
+
+        const messages = [
+            {
+                role: "system",
+                content:
+                    `Kamu adalah AI assistant. Tanggal hari ini: ${today}. ` +
+                    `Knowledge cutoff kamu: Oktober 2023. ` +
+                    `Tugas: Tentukan apakah kamu BUTUH web search untuk menjawab pertanyaan dengan akurat. ` +
+                    `Balas HANYA dengan "YES" atau "NO". ` +
+                    `Balas "YES" jika: ` +
+                    `1. Pertanyaan tentang info terkini (harga, berita, update setelah Oktober 2023) ` +
+                    `2. Kamu tidak yakin atau tidak tahu jawabannya ` +
+                    `3. Pertanyaan tentang data real-time (cuaca, saham, dll) ` +
+                    `4. Fact-checking atau verifikasi ` +
+                    `Balas "NO" jika kamu yakin bisa jawab dengan knowledge yang ada.`,
+            },
+            ...history,
+            {
+                role: "user",
+                content: `Pertanyaan: "${question}"\n\nApakah kamu butuh web search? Jawab HANYA: YES atau NO`,
+            },
+        ];
+
+        const chatCompletion = await groq.chat.completions.create({
+            messages: messages,
+            model: "openai/gpt-oss-120b",
+            temperature: 0.1,
+            max_tokens: 10,
+        });
+
+        const response =
+            chatCompletion.choices[0]?.message?.content?.trim().toUpperCase() ||
+            "NO";
+
+        return response.includes("YES");
+    } catch (error) {
+        console.error("Error checking if needs web search:", error);
+        return false;
+    }
+}
+
 async function askGroqWithContext(question, history = []) {
     try {
         const groq = getGroqClient();
@@ -126,9 +158,6 @@ async function askGroqWithContext(question, history = []) {
     }
 }
 
-/**
- * Ask Groq AI with Web Search (for latest info)
- */
 async function askGroqWithSearch(question, history = []) {
     try {
         const groq = getGroqClient();
@@ -180,4 +209,9 @@ async function askGroqWithSearch(question, history = []) {
     }
 }
 
-module.exports = { askGroq, askGroqWithContext, askGroqWithSearch };
+module.exports = {
+    askGroq,
+    askGroqWithContext,
+    askGroqWithSearch,
+    checkIfNeedsWebSearch,
+};

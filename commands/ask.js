@@ -5,38 +5,6 @@ const {
     registerAskMessage,
 } = require("../utils/conversation");
 
-// Keywords yang butuh web search
-const needsWebSearchKeywords = [
-    "harga",
-    "price",
-    "berita",
-    "news",
-    "terbaru",
-    "latest",
-    "sekarang",
-    "now",
-    "hari ini",
-    "today",
-    "kemarin",
-    "yesterday",
-    "update",
-    "terkini",
-    "current",
-    "kapan",
-    "when",
-    "siapa sekarang",
-    "who is now",
-    "president",
-    "presiden",
-];
-
-function needsWebSearch(question) {
-    const lowerQuestion = question.toLowerCase();
-    return needsWebSearchKeywords.some((keyword) =>
-        lowerQuestion.includes(keyword),
-    );
-}
-
 module.exports = {
     name: "ask",
     description: "Ask AI with real-time web search (support follow-up)",
@@ -74,9 +42,9 @@ module.exports = {
                         "2. Follow-up:\n" +
                         "Reply pesan bot dengan pertanyaan lanjutan\n\n" +
                         "Contoh:\n" +
-                        "- !ask apa itu javascript?\n" +
+                        "- !ask siapa itu Castorice?\n" +
                         "- (reply) contohnya gimana?\n" +
-                        "- (reply) bedanya dengan python?",
+                        "- (reply) benarkah itu?",
                 });
                 return;
             }
@@ -100,19 +68,28 @@ module.exports = {
             const {
                 askGroqWithSearch,
                 askGroqWithContext,
+                checkIfNeedsWebSearch,
             } = require("../scrape/groq");
 
             let response;
 
-            // Smart detection: Use web search if needed
-            if (needsWebSearch(question)) {
-                // Need real-time info: Use web search
-                response = await askGroqWithSearch(question, history);
-            } else if (isFollowUp && history.length > 0) {
-                // Context-based follow-up: No web search needed
-                response = await askGroqWithContext(question, history);
+            if (isFollowUp && history.length > 0) {
+                // AI self-assess: Does it need web search?
+                console.log("AI checking if web search needed...");
+                const needsSearch = await checkIfNeedsWebSearch(
+                    question,
+                    history,
+                );
+
+                if (needsSearch) {
+                    console.log("AI decided: NEED web search");
+                    response = await askGroqWithSearch(question, history);
+                } else {
+                    console.log("AI decided: Context is enough");
+                    response = await askGroqWithContext(question, history);
+                }
             } else {
-                // New question without time-sensitive keywords: Use web search
+                // New question: Always use web search
                 response = await askGroqWithSearch(question, history);
             }
 
