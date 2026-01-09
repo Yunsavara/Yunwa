@@ -154,11 +154,12 @@ async function askGroqWithContext(question, history = []) {
         const isConfirmation = await isJustConfirmation(question, history);
 
         const systemContent = isConfirmation
-            ? "Kamu asisten AI. User memberi konfirmasi/reaksi singkat. " +
-              "Respon natural dan singkat saja. Jangan jelaskan hal yang tidak ditanyakan."
-            : "Kamu asisten AI yang menjawab dengan jelas dan padat. " +
-              "Fokus pada pertanyaan user. Gunakan konteks sebelumnya jika relevan. " +
-              "Jawab dalam bahasa Indonesia. Gunakan *bold* untuk penekanan penting saja.";
+            ? "User cuma kasih konfirmasi/reaksi singkat. " +
+              "JANGAN jelasin apapun yang tidak ditanya. " +
+              "Respon singkat saja, maksimal 1-2 kalimat."
+            : "Jawab HANYA pertanyaan user. " +
+              "JANGAN bahas hal lain yang tidak ditanya. " +
+              "Fokus, jelas, padat. Bahasa Indonesia natural.";
 
         const messages = [
             {
@@ -172,15 +173,13 @@ async function askGroqWithContext(question, history = []) {
             },
         ];
 
-        console.log(
-            `Processing as: ${isConfirmation ? "CONFIRMATION" : "QUESTION"}`,
-        );
+        console.log(`Mode: ${isConfirmation ? "CONFIRMATION" : "QUESTION"}`);
 
         const chatCompletion = await groq.chat.completions.create({
             messages: messages,
             model: "openai/gpt-oss-120b",
-            temperature: 0.3,
-            max_tokens: isConfirmation ? 100 : 1500,
+            temperature: isConfirmation ? 0.1 : 0.3,
+            max_tokens: isConfirmation ? 50 : 1500,
         });
 
         const response =
