@@ -42,7 +42,7 @@ module.exports = {
 
             await yunwa.sendMessage(sender, {
                 image: imageBuffer,
-                caption: `Hasil Pinterest untuk: *${query}*`,
+                caption: `*${query}*`,
             });
 
             await yunwa.sendPresenceUpdate("paused", sender);

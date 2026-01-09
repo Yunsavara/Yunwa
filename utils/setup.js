@@ -43,9 +43,7 @@ async function runSetupWizard() {
     console.log(chalk.gray("   → Daftar di: https://tavily.com/"));
     console.log(chalk.gray("   → Gratis 1000 searches/bulan\n"));
 
-    // ...existing code...
-
-    console.log(chalk.green("3. Resita API Key (untuk Pinterest)"));
+    console.log(chalk.green("3. Resita API Key"));
     console.log(chalk.gray("   → Daftar di: https://api.ferdev.my.id/docs\n"));
 
     console.log(chalk.cyan("Mari setup API keys nya!\n"));
