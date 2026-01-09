@@ -6,7 +6,7 @@ const axios = require("axios");
  */
 module.exports = {
     name: "img",
-    description: "Generate a Ghibli-style image from a text prompt.",
+    description: "Generate a Ghibli-style image from your text prompt.",
     category: "media",
 
     async execute(yunwa, msg, sender, pushname) {
@@ -45,6 +45,17 @@ module.exports = {
                 responseType: "arraybuffer",
             });
             const imageBuffer = Buffer.from(imageResponse.data, "binary");
+
+            // Debug: log buffer size
+            console.log("Image buffer size:", imageBuffer.length);
+
+            if (!imageBuffer || imageBuffer.length === 0) {
+                await yunwa.sendMessage(sender, {
+                    text: "❌ Gagal generate gambar. Coba prompt lain atau ulangi beberapa saat lagi.",
+                });
+                await yunwa.sendPresenceUpdate("paused", sender);
+                return;
+            }
 
             await yunwa.sendMessage(sender, {
                 image: imageBuffer,
