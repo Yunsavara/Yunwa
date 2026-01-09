@@ -30,7 +30,7 @@ function checkEnvExists() {
  * Interactive setup wizard
  */
 async function runSetupWizard() {
-    console.log(chalk.bgCyan.black("\n 🚀 Yunwa Bot - First Time Setup \n"));
+    console.log(chalk.bgCyan.black("\n Yunwa Bot - First Time Setup \n"));
     console.log(
         chalk.yellow("Bot ini memerlukan 2 API Keys (100% GRATIS!):\n"),
     );
@@ -43,7 +43,12 @@ async function runSetupWizard() {
     console.log(chalk.gray("   → Daftar di: https://tavily.com/"));
     console.log(chalk.gray("   → Gratis 1000 searches/bulan\n"));
 
-    console.log(chalk.cyan("Mari setup API keys nya! 🔑\n"));
+    // ...existing code...
+
+    console.log(chalk.green("3. Resita API Key (untuk Pinterest)"));
+    console.log(chalk.gray("   → Daftar di: https://api.ferdev.my.id/docs\n"));
+
+    console.log(chalk.cyan("Mari setup API keys nya!\n"));
 
     // Get Groq API Key
     const groqKey = await question(
@@ -53,6 +58,11 @@ async function runSetupWizard() {
     // Get Tavily API Key
     const tavilyKey = await question(
         chalk.yellow("Masukkan Tavily API Key (atau ketik 'skip'): "),
+    );
+
+    // Get Resita API Key
+    const resitaKey = await question(
+        chalk.yellow("Masukkan Resita API Key (atau ketik 'skip'): "),
     );
 
     // Create .env file
@@ -70,13 +80,20 @@ async function runSetupWizard() {
         envContent += `# TAVILY_API_KEY=your_tavily_api_key_here\n`;
     }
 
+    if (resitaKey.toLowerCase() !== "skip") {
+        envContent += `RESITA_API_KEY=${resitaKey.trim()}\n`;
+    } else {
+        envContent += `# RESITA_API_KEY=your_resita_api_key_here\n`;
+    }
+
     fs.writeFileSync(ENV_PATH, envContent);
 
-    console.log(chalk.green("\n✅ Setup selesai!"));
+    console.log(chalk.green("\nSetup selesai!"));
 
     if (
         groqKey.toLowerCase() === "skip" ||
-        tavilyKey.toLowerCase() === "skip"
+        tavilyKey.toLowerCase() === "skip" ||
+        resitaKey.toLowerCase() === "skip"
     ) {
         console.log(
             chalk.yellow(
