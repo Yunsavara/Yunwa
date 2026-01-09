@@ -24,14 +24,14 @@ module.exports = {
             // Check if this is a reply to bot's message (follow-up)
             const isReply =
                 msg.message.extendedTextMessage?.contextInfo?.quotedMessage;
-            const isReplyToBot =
-                msg.message.extendedTextMessage?.contextInfo?.participant ===
-                undefined; // Reply to bot (not from user)
+            const participant =
+                msg.message.extendedTextMessage?.contextInfo?.participant;
+            const isReplyToBot = isReply && participant !== sender;
 
             let question = "";
             let isFollowUp = false;
 
-            if (isReply && isReplyToBot) {
+            if (isReplyToBot && !body.startsWith("!")) {
                 // Follow-up conversation (reply to bot)
                 question = body.trim();
                 isFollowUp = true;
@@ -78,6 +78,11 @@ module.exports = {
             // Get conversation history
             const history = getHistory(sender);
 
+            // 🔍 DEBUG LOG
+            console.log(`[DEBUG] isFollowUp: ${isFollowUp}`);
+            console.log(`[DEBUG] History length: ${history.length}`);
+            console.log(`[DEBUG] History:`, JSON.stringify(history, null, 2));
+
             // Lazy load groq module
             const {
                 askGroqWithSearch,
@@ -89,21 +94,34 @@ module.exports = {
             if (isFollowUp && history.length > 0) {
                 // Follow-up: Use context without web search (faster)
                 console.log(
-                    `[CONTEXT] Using ${history.length} previous messages`,
+                    `[CONTEXT] Using ${history.length} previous messages for context`,
                 );
                 response = await askGroqWithContext(question, history);
             } else {
                 // New question: Use web search
+                console.log(
+                    `[NEW QUESTION] Using web search (history: ${history.length})`,
+                );
                 response = await askGroqWithSearch(question, history);
             }
 
             // Add to conversation history
+            console.log(`[HISTORY] Adding to history - User: "${question}"`);
             addToHistory(sender, "user", question);
+            console.log(
+                `[HISTORY] Adding to history - Assistant: "${response.substring(0, 50)}..."`,
+            );
             addToHistory(sender, "assistant", response);
+
+            // Verify history saved
+            const updatedHistory = getHistory(sender);
+            console.log(
+                `[HISTORY] Updated history length: ${updatedHistory.length}`,
+            );
 
             // Send response
             await yunwa.sendMessage(sender, {
-                text: `${response}`,
+                text: `${response}\n\n💡 _Reply pesan ini untuk lanjut chat_`,
             });
 
             await yunwa.sendPresenceUpdate("paused", sender);
