@@ -1,20 +1,86 @@
 const { EdgeTTS } = require("@andresaya/edge-tts");
 const fs = require("fs");
 const path = require("path");
+const { getGroqClient } = require("../scrape/groq");
 
 /**
  * TTS Command - Text to Speech using Edge TTS
  * Usage: !tts [voice] [text]
- * Voice codes: idp, idl, enp, enl
+ * Voice codes: idp, idl, enp, enl, jpp (anime waifu), jpl (anime husbando)
  */
 
-// Hardcoded voice mappings
+// Hardcoded voice mappings with audio settings
 const VOICE_MAP = {
-    idp: "id-ID-GadisNeural",
-    idl: "id-ID-ArdiNeural",
-    enp: "en-US-AriaNeural",
-    enl: "en-US-GuyNeural",
+    idp: {
+        voice: "id-ID-GadisNeural",
+        pitch: 0,
+        rate: 0,
+    },
+    idl: {
+        voice: "id-ID-ArdiNeural",
+        pitch: 0,
+        rate: 0,
+    },
+    enp: {
+        voice: "en-US-AriaNeural",
+        pitch: 0,
+        rate: 0,
+    },
+    enl: {
+        voice: "en-US-GuyNeural",
+        pitch: 0,
+        rate: 0,
+    },
+    jpp: {
+        voice: "ja-JP-NanamiNeural",
+        pitch: "+5Hz",
+        rate: "-5%",
+    },
+    jpl: {
+        voice: "ja-JP-KeitaNeural",
+        pitch: "-10Hz",
+        rate: "0%",
+    },
 };
+
+/**
+ * Convert text to Japanese Katakana using Groq AI
+ */
+async function convertToKatakana(text) {
+    try {
+        const groq = getGroqClient();
+
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [
+                {
+                    role: "system",
+                    content:
+                        "Kamu adalah expert dalam bahasa Jepang. " +
+                        "Tugas: Konversi text ke dalam KATAKANA Jepang yang tepat. " +
+                        "Jika input sudah dalam Jepang (Hiragana/Katakana/Kanji), biarkan saja. " +
+                        "Jika input bahasa lain (Indonesia/English), konversi fonetiknya ke Katakana. " +
+                        "HANYA output Katakana/Hiragana/Kanji, jangan ada penjelasan lain.",
+                },
+                {
+                    role: "user",
+                    content: `Konversi text ini ke Katakana Jepang yang tepat: "${text}"`,
+                },
+            ],
+            model: "openai/gpt-oss-120b",
+            temperature: 0.3,
+            max_tokens: 200,
+        });
+
+        const katakana =
+            chatCompletion.choices[0]?.message?.content?.trim() || text;
+        console.log(`Text to Katakana: "${text}" → "${katakana}"`);
+        return katakana;
+    } catch (error) {
+        console.error("Error converting to Katakana:", error);
+        // Fallback: return original text
+        return text;
+    }
+}
 
 module.exports = {
     name: "tts",
@@ -40,12 +106,15 @@ module.exports = {
                         "• *idp* - Indonesia Perempuan\n" +
                         "• *idl* - Indonesia Laki-laki\n" +
                         "• *enp* - English Female\n" +
-                        "• *enl* - English Male\n\n" +
+                        "• *enl* - English Male\n" +
+                        "• *jpp* - Japanese Female (Anime Waifu)\n" +
+                        "• *jpl* - Japanese Male (Anime Husbando) ⚔️\n\n" +
                         "Contoh:\n" +
                         "• !tts idp Halo, apa kabar?\n" +
-                        "• !tts idl Selamat pagi!\n" +
                         "• !tts enp Hello world!\n" +
-                        "• !tts enl Good morning!",
+                        "• !tts jpp Ohayou gozaimasu!\n" +
+                        "• !tts jpl Ore wa Naruto da!\n\n" +
+                        "*Note:* Suara Jepang akan auto-convert ke Katakana",
                 });
                 return;
             }
@@ -58,13 +127,15 @@ module.exports = {
             const words = text.split(" ");
             const voiceCode = words[0].toLowerCase();
 
-            let voice = VOICE_MAP.idp; // Default: Indonesian female
+            let voiceConfig = VOICE_MAP.idp; // Default: Indonesian female
             let textToSpeak = text;
+            let isJapanese = false;
 
             // Check if first word is a valid voice code
             if (VOICE_MAP[voiceCode]) {
-                voice = VOICE_MAP[voiceCode];
+                voiceConfig = VOICE_MAP[voiceCode];
                 textToSpeak = words.slice(1).join(" ");
+                isJapanese = voiceCode === "jpp" || voiceCode === "jpl";
             }
 
             // Validate text
@@ -75,8 +146,22 @@ module.exports = {
                 return;
             }
 
-            // Synthesize speech
-            await tts.synthesize(textToSpeak, voice);
+            // Convert to Katakana if Japanese voice
+            if (isJapanese && process.env.GROQ_API_KEY) {
+                console.log("Converting to Katakana...");
+                textToSpeak = await convertToKatakana(textToSpeak);
+            }
+
+            // Synthesize speech with options
+            const synthesisOptions = {};
+            if (voiceConfig.pitch) synthesisOptions.pitch = voiceConfig.pitch;
+            if (voiceConfig.rate) synthesisOptions.rate = voiceConfig.rate;
+
+            await tts.synthesize(
+                textToSpeak,
+                voiceConfig.voice,
+                synthesisOptions,
+            );
 
             // Create temp directory if not exists
             const tempDir = path.join(__dirname, "../temp");

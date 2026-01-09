@@ -198,6 +198,7 @@ async function askGroqWithSearch(question, history = []) {
 }
 
 module.exports = {
+    groqClient,
     askGroq,
     askGroqWithContext,
     askGroqWithSearch,
