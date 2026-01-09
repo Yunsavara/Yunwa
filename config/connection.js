@@ -7,21 +7,19 @@ const pino = require("pino");
 const chalk = require("chalk");
 const question = require("../utils/question");
 
-// pairing method
-// true => pairing code || false => scan qr
+// Pairing method: true = pairing code, false = QR scan
 const usePairingCode = true;
 
 /**
  * Create WhatsApp connection configuration
- * @returns {Promise<Object>} WhatsApp socket instance
  */
 async function createConnection() {
     console.log(chalk.yellow("Initiating connection to WhatsApp..."));
 
-    // save the login session
+    // Save the login session
     const { state, saveCreds } = await useMultiFileAuthState("./YunwaSession");
 
-    // fetch latest version
+    // Fetch latest version
     const { version, isLatest } = await fetchLatestBaileysVersion();
     console.log(
         chalk.blue(
@@ -30,14 +28,14 @@ async function createConnection() {
     );
 
     const yunwa = makeWASocket({
-        logger: pino({ level: "silent" }),
+        logger: pino({ level: "fatal" }), // Changed from "silent" to "fatal" to suppress Baileys logs
         printQRInTerminal: !usePairingCode,
         auth: state,
-        browser: ["Ubuntu", "Chrome", "20.0.04"], // browser simulation
+        browser: ["Ubuntu", "Chrome", "20.0.04"],
         version,
     });
 
-    // pairing code method - request before connection opens
+    // Pairing code method
     if (usePairingCode && !yunwa.authState.creds.registered) {
         console.log(chalk.green("\nInput phone number with country code"));
         const phoneNumber = await question(chalk.cyan("> "));
@@ -59,7 +57,7 @@ async function createConnection() {
         }
     }
 
-    // save login session
+    // Save login session
     yunwa.ev.on("creds.update", saveCreds);
 
     return yunwa;
