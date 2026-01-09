@@ -111,36 +111,51 @@ async function checkIfNeedsWebSearch(question, history = []) {
     }
 }
 
+async function isJustConfirmation(message, history = []) {
+    try {
+        const groq = getGroqClient();
+
+        const messages = [
+            {
+                role: "system",
+                content:
+                    "Tentukan apakah pesan user adalah konfirmasi/reaksi singkat (seperti 'iya', 'oh', 'emang iya', 'wah', 'oke') " +
+                    "ataukah pertanyaan/permintaan yang butuh jawaban detail. " +
+                    "Jawab HANYA: CONFIRMATION atau QUESTION",
+            },
+            ...history.slice(-4),
+            {
+                role: "user",
+                content: `Pesan: "${message}"\nIni konfirmasi atau pertanyaan?`,
+            },
+        ];
+
+        const chatCompletion = await groq.chat.completions.create({
+            messages: messages,
+            model: "openai/gpt-oss-120b",
+            temperature: 0.1,
+            max_tokens: 10,
+        });
+
+        const response =
+            chatCompletion.choices[0]?.message?.content?.trim().toUpperCase() ||
+            "QUESTION";
+        return response.includes("CONFIRMATION");
+    } catch (error) {
+        console.error("Error checking confirmation:", error);
+        return false;
+    }
+}
+
 async function askGroqWithContext(question, history = []) {
     try {
         const groq = getGroqClient();
 
-        // Deteksi jika input cuma konfirmasi/reaksi singkat
-        const shortResponses = [
-            "iya",
-            "oh",
-            "oke",
-            "ok",
-            "wah",
-            "hmm",
-            "ic",
-            "i see",
-            "emang",
-            "memang",
-            "bener",
-            "betul",
-            "sip",
-        ];
-        const isShortResponse =
-            question.trim().split(/\s+/).length <= 3 &&
-            shortResponses.some((word) =>
-                question.toLowerCase().includes(word),
-            );
+        const isConfirmation = await isJustConfirmation(question, history);
 
-        const systemContent = isShortResponse
-            ? "Kamu asisten AI. User baru saja memberi reaksi singkat/konfirmasi. " +
-              "Jangan jelaskan hal yang tidak ditanyakan. " +
-              "Cukup respon natural dan tunggu pertanyaan berikutnya jika ada."
+        const systemContent = isConfirmation
+            ? "Kamu asisten AI. User memberi konfirmasi/reaksi singkat. " +
+              "Respon natural dan singkat saja. Jangan jelaskan hal yang tidak ditanyakan."
             : "Kamu asisten AI yang menjawab dengan jelas dan padat. " +
               "Fokus pada pertanyaan user. Gunakan konteks sebelumnya jika relevan. " +
               "Jawab dalam bahasa Indonesia. Gunakan *bold* untuk penekanan penting saja.";
@@ -157,11 +172,15 @@ async function askGroqWithContext(question, history = []) {
             },
         ];
 
+        console.log(
+            `Processing as: ${isConfirmation ? "CONFIRMATION" : "QUESTION"}`,
+        );
+
         const chatCompletion = await groq.chat.completions.create({
             messages: messages,
             model: "openai/gpt-oss-120b",
             temperature: 0.3,
-            max_tokens: isShortResponse ? 150 : 1500, // Batasi token untuk response singkat
+            max_tokens: isConfirmation ? 100 : 1500,
         });
 
         const response =
