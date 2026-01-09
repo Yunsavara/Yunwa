@@ -111,7 +111,7 @@ async function checkIfNeedsWebSearch(question, history = []) {
     }
 }
 
-async function isJustConfirmation(message, history = []) {
+async function askGroqWithContext(question, history = []) {
     try {
         const groq = getGroqClient();
 
@@ -119,67 +119,22 @@ async function isJustConfirmation(message, history = []) {
             {
                 role: "system",
                 content:
-                    "Tentukan apakah pesan user adalah konfirmasi/reaksi singkat (seperti 'iya', 'oh', 'emang iya', 'wah', 'oke') " +
-                    "ataukah pertanyaan/permintaan yang butuh jawaban detail. " +
-                    "Jawab HANYA: CONFIRMATION atau QUESTION",
+                    "Kamu asisten AI yang menjawab dengan jelas dan padat. " +
+                    "Fokus pada pertanyaan user. Gunakan konteks sebelumnya jika relevan. " +
+                    "Jawab dalam bahasa Indonesia. Gunakan *bold* untuk penekanan penting saja.",
             },
-            ...history.slice(-4),
-            {
-                role: "user",
-                content: `Pesan: "${message}"\nIni konfirmasi atau pertanyaan?`,
-            },
-        ];
-
-        const chatCompletion = await groq.chat.completions.create({
-            messages: messages,
-            model: "openai/gpt-oss-120b",
-            temperature: 0.1,
-            max_tokens: 10,
-        });
-
-        const response =
-            chatCompletion.choices[0]?.message?.content?.trim().toUpperCase() ||
-            "QUESTION";
-        return response.includes("CONFIRMATION");
-    } catch (error) {
-        console.error("Error checking confirmation:", error);
-        return false;
-    }
-}
-
-async function askGroqWithContext(question, history = []) {
-    try {
-        const groq = getGroqClient();
-
-        const isConfirmation = await isJustConfirmation(question, history);
-
-        const systemContent = isConfirmation
-            ? "User cuma kasih konfirmasi/reaksi singkat. " +
-              "JANGAN jelasin apapun yang tidak ditanya. " +
-              "Respon singkat saja, maksimal 1-2 kalimat."
-            : "Jawab HANYA pertanyaan user. " +
-              "JANGAN bahas hal lain yang tidak ditanya. " +
-              "Fokus, jelas, padat. Bahasa Indonesia natural.";
-
-        const messages = [
-            {
-                role: "system",
-                content: systemContent,
-            },
-            ...history.slice(-6),
+            ...history.slice(-6), // Batasi history, ambil 6 message terakhir aja
             {
                 role: "user",
                 content: question,
             },
         ];
 
-        console.log(`Mode: ${isConfirmation ? "CONFIRMATION" : "QUESTION"}`);
-
         const chatCompletion = await groq.chat.completions.create({
             messages: messages,
             model: "openai/gpt-oss-120b",
-            temperature: isConfirmation ? 0.1 : 0.3,
-            max_tokens: isConfirmation ? 50 : 1500,
+            temperature: 0.3,
+            max_tokens: 1500,
         });
 
         const response =
