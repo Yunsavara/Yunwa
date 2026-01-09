@@ -7,7 +7,8 @@ const axios = require("axios");
  */
 module.exports = {
     name: "pin",
-    description: "Cari gambar dari Pinterest (via Resita API)",
+    description:
+        "Searches Pinterest for images based on your query and sends a random result.",
     category: "media",
 
     async execute(yunwa, msg, sender, pushname) {
@@ -42,7 +43,7 @@ module.exports = {
 
             await yunwa.sendMessage(sender, {
                 image: imageBuffer,
-                caption: `*${query}*`,
+                caption: `*${query}*\n\nSource: Pinterest\n${imageUrl}`,
             });
 
             await yunwa.sendPresenceUpdate("paused", sender);
