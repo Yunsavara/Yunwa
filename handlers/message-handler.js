@@ -3,7 +3,7 @@ const commands = require("../commands");
 
 // Store processed message IDs to prevent duplicate processing
 const processedMessages = new Set();
-const MESSAGE_CACHE_SIZE = 1000; // Keep last 1000 message IDs
+const MESSAGE_CACHE_SIZE = 1000;
 
 // Cooldown tracking per user
 const userCooldowns = new Map();
@@ -43,7 +43,6 @@ function setCooldown(userId, commandName) {
     const key = `${userId}:${commandName}`;
     userCooldowns.set(key, Date.now() + COOLDOWN_TIME);
 
-    // Clean up expired cooldowns
     setTimeout(() => {
         userCooldowns.delete(key);
     }, COOLDOWN_TIME);
@@ -85,6 +84,57 @@ function setupMessageHandler(yunwa) {
 
             const sender = msg.key.remoteJid;
             const pushname = msg.pushName || "Yunwa";
+
+            // ✅ CHECK: Is this a reply to bot's message? (for follow-up)
+            const quotedMsg =
+                msg.message.extendedTextMessage?.contextInfo?.quotedMessage;
+            const isReplyToBot =
+                quotedMsg &&
+                msg.message.extendedTextMessage?.contextInfo?.participant ===
+                    undefined;
+
+            // If reply to bot, treat as !ask follow-up
+            if (isReplyToBot && body && !body.startsWith("!")) {
+                console.log(
+                    chalk.magenta(
+                        `[FOLLOW-UP] Detected reply from ${pushname}`,
+                    ),
+                );
+
+                // Mark as processed
+                processedMessages.add(messageId);
+                cleanupMessageCache();
+
+                // Check cooldown for ask command
+                if (isOnCooldown(sender, "ask")) {
+                    console.log(
+                        chalk.yellow(
+                            `[COOLDOWN] ${pushname} is on cooldown for 'ask'`,
+                        ),
+                    );
+                    return;
+                }
+
+                // Set cooldown
+                setCooldown(sender, "ask");
+
+                // Execute ask command with reply context
+                const askCommand = commands["ask"];
+                if (askCommand) {
+                    try {
+                        await askCommand.execute(yunwa, msg, sender, pushname);
+                        console.log(
+                            chalk.green(`✓ Follow-up conversation processed`),
+                        );
+                    } catch (error) {
+                        console.error(
+                            chalk.red(`✗ Error in follow-up conversation:`),
+                            error,
+                        );
+                    }
+                }
+                return;
+            }
 
             // prefix bot Yunwa
             if (!body.startsWith("!")) return;
