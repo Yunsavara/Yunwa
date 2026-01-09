@@ -85,48 +85,35 @@ function setupMessageHandler(yunwa) {
             const sender = msg.key.remoteJid;
             const pushname = msg.pushName || "Yunwa";
 
-            // 🔍 DEBUG: Log message structure untuk lihat reply info
-            if (msg.message.extendedTextMessage?.contextInfo) {
-                console.log(chalk.gray("=== DEBUG REPLY INFO ==="));
-                console.log(
-                    chalk.gray(
-                        "Has quotedMessage:",
-                        !!msg.message.extendedTextMessage?.contextInfo
-                            ?.quotedMessage,
-                    ),
-                );
-                console.log(
-                    chalk.gray(
-                        "Participant:",
-                        msg.message.extendedTextMessage?.contextInfo
-                            ?.participant,
-                    ),
-                );
-                console.log(
-                    chalk.gray(
-                        "fromMe in quoted:",
-                        msg.message.extendedTextMessage?.contextInfo
-                            ?.quotedMessage
-                            ? "exists"
-                            : "none",
-                    ),
-                );
-                console.log(chalk.gray("Body:", body));
-                console.log(chalk.gray("========================"));
-            }
-
             // ✅ CHECK: Is this a reply to bot's message? (for follow-up)
             const contextInfo = msg.message.extendedTextMessage?.contextInfo;
             const quotedMsg = contextInfo?.quotedMessage;
 
-            // Check if reply to bot: participant should be undefined (in private chat) or match bot number
-            const isReplyToBot = quotedMsg && !contextInfo?.participant;
+            // 🔍 PROPER CHECK: Reply to bot if quoted message has key.fromMe = true
+            const quotedKey = contextInfo?.stanzaId; // Message ID yang di-quote
+            const isReplyToBot =
+                quotedMsg && contextInfo?.participant === undefined;
+
+            // Alternative check: Jika ada participant, berarti reply ke user, bukan bot
+            const isReplyToBotMessage =
+                quotedMsg && !body.startsWith("!") && !contextInfo?.participant;
+
+            console.log(chalk.gray("=== DEBUG INFO ==="));
+            console.log(chalk.gray("Has quoted:", !!quotedMsg));
+            console.log(
+                chalk.gray("Has participant:", contextInfo?.participant),
+            );
+            console.log(
+                chalk.gray("Body starts with !:", body.startsWith("!")),
+            );
+            console.log(chalk.gray("Is reply to bot:", isReplyToBotMessage));
+            console.log(chalk.gray("=================="));
 
             // If reply to bot, treat as !ask follow-up
-            if (isReplyToBot && body && !body.startsWith("!")) {
+            if (isReplyToBotMessage) {
                 console.log(
                     chalk.magenta(
-                        `[FOLLOW-UP] Detected reply from ${pushname}: "${body}"`,
+                        `[FOLLOW-UP] Detected reply to bot from ${pushname}: "${body}"`,
                     ),
                 );
 
