@@ -5,11 +5,38 @@ const {
     registerAskMessage,
 } = require("../utils/conversation");
 
-/**
- * Ask command - Chat with AI + Web Search
- * Usage: !ask <pertanyaan>
- * Or reply to bot message for follow-up conversation
- */
+// Keywords yang butuh web search
+const needsWebSearchKeywords = [
+    "harga",
+    "price",
+    "berita",
+    "news",
+    "terbaru",
+    "latest",
+    "sekarang",
+    "now",
+    "hari ini",
+    "today",
+    "kemarin",
+    "yesterday",
+    "update",
+    "terkini",
+    "current",
+    "kapan",
+    "when",
+    "siapa sekarang",
+    "who is now",
+    "president",
+    "presiden",
+];
+
+function needsWebSearch(question) {
+    const lowerQuestion = question.toLowerCase();
+    return needsWebSearchKeywords.some((keyword) =>
+        lowerQuestion.includes(keyword),
+    );
+}
+
 module.exports = {
     name: "ask",
     description: "Ask AI with real-time web search (support follow-up)",
@@ -22,7 +49,6 @@ module.exports = {
                 msg.message.extendedTextMessage?.text ||
                 "";
 
-            // Check if this is a reply to bot's message (follow-up)
             const isReply =
                 msg.message.extendedTextMessage?.contextInfo?.quotedMessage;
             const participant =
@@ -33,11 +59,9 @@ module.exports = {
             let isFollowUp = false;
 
             if (isReplyToBot && !body.startsWith("!")) {
-                // Follow-up conversation (reply to bot)
                 question = body.trim();
                 isFollowUp = true;
             } else {
-                // New conversation with !ask command
                 question = body.slice(4).trim();
             }
 
@@ -57,7 +81,6 @@ module.exports = {
                 return;
             }
 
-            // Check API keys
             if (!process.env.GROQ_API_KEY || !process.env.TAVILY_API_KEY) {
                 await yunwa.sendMessage(sender, {
                     text:
@@ -72,10 +95,8 @@ module.exports = {
 
             await yunwa.sendPresenceUpdate("composing", sender);
 
-            // Get conversation history
             const history = getHistory(sender);
 
-            // Lazy load groq module
             const {
                 askGroqWithSearch,
                 askGroqWithContext,
@@ -83,24 +104,25 @@ module.exports = {
 
             let response;
 
-            if (isFollowUp && history.length > 0) {
-                // Follow-up: Use context without web search (faster)
+            // Smart detection: Use web search if needed
+            if (needsWebSearch(question)) {
+                // Need real-time info: Use web search
+                response = await askGroqWithSearch(question, history);
+            } else if (isFollowUp && history.length > 0) {
+                // Context-based follow-up: No web search needed
                 response = await askGroqWithContext(question, history);
             } else {
-                // New question: Use web search
+                // New question without time-sensitive keywords: Use web search
                 response = await askGroqWithSearch(question, history);
             }
 
-            // Add to conversation history
             addToHistory(sender, "user", question);
             addToHistory(sender, "assistant", response);
 
-            // Send response and register message ID for follow-up tracking
             const sentMsg = await yunwa.sendMessage(sender, {
                 text: response,
             });
 
-            // Register this message as ask command response
             if (sentMsg && sentMsg.key && sentMsg.key.id) {
                 registerAskMessage(sentMsg.key.id);
             }
