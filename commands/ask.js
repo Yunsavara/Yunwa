@@ -1,10 +1,18 @@
+const {
+    getHistory,
+    addToHistory,
+    clearHistory,
+} = require("../utils/conversation");
+
 /**
  * Ask command - Chat with AI + Web Search
  * Usage: !ask <pertanyaan>
+ * Or reply to bot message for follow-up conversation
  */
 module.exports = {
     name: "ask",
-    description: "Ask AI with real-time web search",
+    description: "Ask AI with real-time web search (support follow-up)",
+    category: "ai",
 
     async execute(yunwa, msg, sender, pushname) {
         try {
@@ -13,23 +21,50 @@ module.exports = {
                 msg.message.extendedTextMessage?.text ||
                 "";
 
-            // Extract question dari command
-            const question = body.slice(4).trim(); // Remove "!ask"
+            // Check if this is a reply to bot's message (follow-up)
+            const isReply =
+                msg.message.extendedTextMessage?.contextInfo?.quotedMessage;
+            const isReplyToBot =
+                msg.message.extendedTextMessage?.contextInfo?.participant ===
+                undefined; // Reply to bot (not from user)
+
+            let question = "";
+            let isFollowUp = false;
+
+            if (isReply && isReplyToBot) {
+                // Follow-up conversation (reply to bot)
+                question = body.trim();
+                isFollowUp = true;
+                console.log(`[FOLLOW-UP] ${pushname}: ${question}`);
+            } else {
+                // New conversation with !ask command
+                question = body.slice(4).trim(); // Remove "!ask"
+            }
 
             if (!question) {
                 await yunwa.sendMessage(sender, {
-                    text: "❌ *Cara pakai:* !ask <pertanyaan>\n\n*Contoh:*\n• !ask siapa presiden indonesia saat ini?\n• !ask harga bitcoin hari ini\n• !ask berita terkini tentang AI",
+                    text:
+                        "❌ *Cara pakai:*\n\n" +
+                        "*1. Ask baru:*\n" +
+                        "!ask <pertanyaan>\n\n" +
+                        "*2. Follow-up:*\n" +
+                        "Reply pesan bot dengan pertanyaan lanjutan\n\n" +
+                        "*Contoh:*\n" +
+                        "• !ask apa itu javascript?\n" +
+                        "• (reply) contohnya gimana?\n" +
+                        "• (reply) bedanya dengan python?\n\n" +
+                        "💡 _Conversation akan auto-clear setelah 30 menit idle_",
                 });
                 return;
             }
 
-            // Check API keys before processing
+            // Check API keys
             if (!process.env.GROQ_API_KEY || !process.env.TAVILY_API_KEY) {
                 await yunwa.sendMessage(sender, {
                     text:
                         "❌ *API Keys belum di-setup!*\n\n" +
                         "Untuk menggunakan fitur AI, owner bot harus setup API keys dulu.\n\n" +
-                        "🔑 API Keys yang dibutuhkan :\n" +
+                        "🔑 API Keys yang dibutuhkan:\n" +
                         "• Groq: https://console.groq.com/keys\n" +
                         "• Tavily: https://tavily.com/\n\n" +
                         "📖 Restart bot untuk menjalankan setup wizard.",
@@ -40,11 +75,31 @@ module.exports = {
             // Kirim typing indicator
             await yunwa.sendPresenceUpdate("composing", sender);
 
-            // Lazy load groq module (only when actually used)
-            const { askGroqWithSearch } = require("../scrape/groq");
+            // Get conversation history
+            const history = getHistory(sender);
 
-            // Ask AI dengan web search
-            const response = await askGroqWithSearch(question);
+            // Lazy load groq module
+            const {
+                askGroqWithSearch,
+                askGroqWithContext,
+            } = require("../scrape/groq");
+
+            let response;
+
+            if (isFollowUp && history.length > 0) {
+                // Follow-up: Use context without web search (faster)
+                console.log(
+                    `[CONTEXT] Using ${history.length} previous messages`,
+                );
+                response = await askGroqWithContext(question, history);
+            } else {
+                // New question: Use web search
+                response = await askGroqWithSearch(question, history);
+            }
+
+            // Add to conversation history
+            addToHistory(sender, "user", question);
+            addToHistory(sender, "assistant", response);
 
             // Send response
             await yunwa.sendMessage(sender, {
