@@ -79,45 +79,51 @@ async function checkIfNeedsWebSearch(question, history = []) {
             year: "numeric",
             month: "long",
             day: "numeric",
+            weekday: "long",
         });
 
         const messages = [
             {
                 role: "system",
                 content:
-                    `Kamu adalah AI assistant. Tanggal hari ini: ${today}. ` +
-                    `Knowledge cutoff kamu: Oktober 2023. ` +
-                    `Tugas: Tentukan apakah kamu BUTUH web search untuk menjawab pertanyaan dengan akurat. ` +
-                    `Balas HANYA dengan "YES" atau "NO". ` +
-                    `Balas "YES" jika: ` +
-                    `1. Pertanyaan tentang info terkini (harga, berita, update setelah Oktober 2023) ` +
-                    `2. Kamu tidak yakin atau tidak tahu jawabannya ` +
-                    `3. Pertanyaan tentang data real-time (cuaca, saham, dll) ` +
-                    `4. Fact-checking atau verifikasi ` +
-                    `Balas "NO" jika kamu yakin bisa jawab dengan knowledge yang ada.`,
+                    `Kamu adalah AI assistant dengan knowledge cutoff Oktober 2023. Hari ini: ${today}. ` +
+                    `\n\nTugas: Evaluasi apakah kamu perlu web search untuk memberikan jawaban yang AKURAT, TERBARU, dan TERVERIFIKASI.` +
+                    `\n\nPertimbangkan:` +
+                    `\n- Apakah topik ini berpotensi berubah atau berkembang setelah Oktober 2023?` +
+                    `\n- Apakah pertanyaan meminta verifikasi, konfirmasi, atau pengecekan kebenaran?` +
+                    `\n- Apakah pertanyaan meminta informasi spesifik/detail yang mungkin kamu tidak tahu persis?` +
+                    `\n- Apakah pertanyaan tentang sesuatu yang terjadi/muncul setelah knowledge cutoff-mu?` +
+                    `\n- Apakah kamu merasa tingkat keyakinanmu kurang dari 90% untuk jawaban ini?` +
+                    `\n\nPrinsip utama: Jika ada kemungkinan jawabanmu bisa SALAH, OUTDATED, atau TIDAK LENGKAP, pilih YES.` +
+                    `\n\nJawab HANYA: YES atau NO`,
             },
             ...history,
             {
                 role: "user",
-                content: `Pertanyaan: "${question}"\n\nApakah kamu butuh web search? Jawab HANYA: YES atau NO`,
+                content: `Pertanyaan: "${question}"\n\nApakah kamu butuh web search? YES atau NO?`,
             },
         ];
 
         const chatCompletion = await groq.chat.completions.create({
             messages: messages,
             model: "openai/gpt-oss-120b",
-            temperature: 0.1,
+            temperature: 0.2, // Slightly higher for better reasoning
             max_tokens: 10,
         });
 
         const response =
             chatCompletion.choices[0]?.message?.content?.trim().toUpperCase() ||
-            "NO";
+            "YES"; // Default to YES if no response
+
+        console.log(
+            `AI decision: ${response.includes("YES") ? "NEED web search" : "Context enough"}`,
+        );
 
         return response.includes("YES");
     } catch (error) {
         console.error("Error checking if needs web search:", error);
-        return false;
+        // If error, default to YES (safer to search than give wrong answer)
+        return true;
     }
 }
 
