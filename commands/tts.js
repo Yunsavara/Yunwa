@@ -32,9 +32,9 @@ const VOICE_MAP = {
         rate: 0,
     },
     jpp: {
-        voice: "ja-JP-AoiNeural",
-        pitch: "-15Hz",
-        rate: "-20%",
+        voice: "ja-JP-NanamiNeural",
+        pitch: "-10Hz",
+        rate: "-15%",
     },
     jpl: {
         voice: "ja-JP-KeitaNeural",
