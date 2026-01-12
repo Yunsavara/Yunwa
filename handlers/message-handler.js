@@ -62,6 +62,8 @@ function setupMessageHandler(yunwa) {
             const body =
                 msg.message.conversation ||
                 msg.message.extendedTextMessage?.text ||
+                msg.message.imageMessage?.caption ||
+                msg.message.videoMessage?.caption ||
                 "";
 
             const sender = msg.key.remoteJid;
