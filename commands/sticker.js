@@ -1,10 +1,13 @@
-const { Jimp } = require("jimp");
+const { createJimp } = require("@jimp/core");
+const { defaultFormats, defaultPlugins } = require("jimp");
+const webp = require("@jimp/wasm-webp");
 const { downloadContentFromMessage } = require("baileys");
-const webp = require("@jimp/js-webp");
 
-// Register WebP plugin
-Jimp.decoders["image/webp"] = webp.decode;
-Jimp.encoders["image/webp"] = webp.encode;
+// Create custom Jimp with WebP support
+const Jimp = createJimp({
+    formats: [...defaultFormats, webp],
+    plugins: defaultPlugins,
+});
 
 /**
  * Sticker command - Convert image to WhatsApp sticker with optional text
@@ -78,8 +81,8 @@ module.exports = {
                 throw new Error("Gagal download gambar");
             }
 
-            // Process with Jimp
-            let image = await Jimp.read(buffer);
+            // Process with Jimp (custom with WebP support)
+            let image = await Jimp.fromBuffer(buffer);
 
             // Get dimensions
             const width = image.width;
@@ -108,16 +111,15 @@ module.exports = {
                 if (bottomText) finalHeight += textPadding;
                 if (topText) yOffset = textPadding;
 
-                // Create new canvas
                 const newImage = new Jimp({
                     width: targetWidth,
                     height: finalHeight,
                     color: 0x00000000,
                 });
+
                 await newImage.composite(image, 0, yOffset);
                 image = newImage;
 
-                // Load font
                 const { loadFont } = require("jimp");
                 const font = await loadFont("SANS_64_WHITE");
 
@@ -162,7 +164,7 @@ module.exports = {
                 image = finalImage;
             }
 
-            // Convert to WebP
+            // Convert to WebP format for sticker
             const stickerBuffer = await image.getBuffer("image/webp");
 
             // Send sticker
