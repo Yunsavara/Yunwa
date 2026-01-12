@@ -7,8 +7,7 @@ const axios = require("axios");
  */
 module.exports = {
     name: "pin",
-    description:
-        "Searches Pinterest for images based on your query and sends a random result.",
+    description: "Searches Pinterest for images",
     category: "media",
 
     async execute(yunwa, msg, sender, pushname) {
