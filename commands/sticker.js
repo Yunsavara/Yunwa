@@ -123,6 +123,7 @@ module.exports = {
                 if (topText) {
                     const text = topText.toUpperCase();
                     const topY = 10;
+                    const centerX = targetWidth / 2;
 
                     // Create stroke effect by printing black text multiple times (offset)
                     const strokeOffsets = [
@@ -140,7 +141,7 @@ module.exports = {
                     for (const [offsetX, offsetY] of strokeOffsets) {
                         image.print({
                             font: fontBlack,
-                            x: offsetX,
+                            x: centerX + offsetX,
                             y: topY + offsetY,
                             text: {
                                 text: text,
@@ -153,7 +154,7 @@ module.exports = {
                     // Print white text on top
                     image.print({
                         font: fontWhite,
-                        x: 0,
+                        x: centerX,
                         y: topY,
                         text: {
                             text: text,
@@ -166,6 +167,7 @@ module.exports = {
                 if (bottomText) {
                     const text = bottomText.toUpperCase();
                     const bottomY = targetHeight - 75;
+                    const centerX = targetWidth / 2;
 
                     // Create stroke effect by printing black text multiple times (offset)
                     const strokeOffsets = [
@@ -183,7 +185,7 @@ module.exports = {
                     for (const [offsetX, offsetY] of strokeOffsets) {
                         image.print({
                             font: fontBlack,
-                            x: offsetX,
+                            x: centerX + offsetX,
                             y: bottomY + offsetY,
                             text: {
                                 text: text,
@@ -196,7 +198,7 @@ module.exports = {
                     // Print white text on top
                     image.print({
                         font: fontWhite,
-                        x: 0,
+                        x: centerX,
                         y: bottomY,
                         text: {
                             text: text,
