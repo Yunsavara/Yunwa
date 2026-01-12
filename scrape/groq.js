@@ -133,7 +133,7 @@ async function askGroqWithContext(question, history = []) {
                     "Jawab jelas dan padat dalam bahasa Indonesia. " +
                     "Gunakan konteks history jika ada. " +
                     "Cite sumber dengan [1], [2], [3] saat mengutip informasi dari web. " +
-                    "Fokus pada jawaban, sumber akan ditambahkan otomatis jika belum ada. " +
+                    "Fokus pada jawaban, sumber akan ditambahkan otomatis. " +
                     "Gunakan *bold* untuk penekanan penting saja.",
             },
             ...history.slice(-6), // Ambil 6 message terakhir dari history
@@ -154,21 +154,13 @@ async function askGroqWithContext(question, history = []) {
             chatCompletion.choices[0]?.message?.content ||
             "Maaf, tidak ada respon.";
 
-        // Cek apakah AI sudah mencantumkan sumber
-        const hasSourceSection =
-            response.includes("─────────────") ||
-            response.match(/\*Sumber[:\s]*\*/i) ||
-            response.match(/Sumber[:\s]*\n\[/);
-
-        // Append sumber dari Tavily hanya jika AI belum mencantumkan
-        if (!hasSourceSection) {
-            const sources = getLastSearchSources();
-            if (sources && sources.length > 0) {
-                response += "\n─────────────\n*Sumber:*\n";
-                sources.forEach((source, index) => {
-                    response += `[${index + 1}] ${source.title}\n${source.url}\n\n`;
-                });
-            }
+        // Append sumber dari Tavily
+        const sources = getLastSearchSources();
+        if (sources && sources.length > 0) {
+            response += "\n─────────────\n*Sumber:*\n";
+            sources.forEach((source, index) => {
+                response += `[${index + 1}] ${source.title}\n${source.url}\n\n`;
+            });
         }
 
         return convertToWhatsAppFormat(response);
