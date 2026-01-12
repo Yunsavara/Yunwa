@@ -4,6 +4,7 @@ const {
     clearHistory,
     registerAskMessage,
 } = require("../utils/conversation");
+const { shouldSearch } = require("../utils/ask-router");
 
 module.exports = {
     name: "ask",
@@ -64,10 +65,22 @@ module.exports = {
             await yunwa.sendPresenceUpdate("composing", sender);
 
             const history = getHistory(sender);
-            const { askGroqWithContext } = require("../scrape/groq");
+            const {
+                askGroqWithContext,
+                askGroqSimple,
+            } = require("../scrape/groq");
 
-            // Always use askGroqWithContext (search + history)
-            const response = await askGroqWithContext(question, history);
+            // Decide if we need web search
+            const needsSearch = shouldSearch(question, isFollowUp, history);
+
+            let response;
+            if (needsSearch) {
+                // Route: Web Search → Groq with Context
+                response = await askGroqWithContext(question, history);
+            } else {
+                // Route: Direct to Groq with History only
+                response = await askGroqSimple(question, history);
+            }
 
             addToHistory(sender, "user", question);
             addToHistory(sender, "assistant", response);
