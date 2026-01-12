@@ -1,4 +1,5 @@
 const Jimp = require("jimp");
+const { downloadContentFromMessage } = require("baileys");
 
 /**
  * Sticker command - Convert image to WhatsApp sticker with optional text
@@ -63,12 +64,18 @@ module.exports = {
                 }
             }
 
-            // Download the image
-            const imageBuffer = await yunwa.downloadMediaMessage(
-                msg.message.extendedTextMessage.contextInfo.quotedMessage,
+            // Download the image from quoted message
+            const stream = await downloadContentFromMessage(
+                quotedMsg.imageMessage,
+                "image",
             );
 
-            if (!imageBuffer) {
+            let buffer = Buffer.from([]);
+            for await (const chunk of stream) {
+                buffer = Buffer.concat([buffer, chunk]);
+            }
+
+            if (!buffer || buffer.length === 0) {
                 await yunwa.sendMessage(sender, {
                     text: "❌ Failed to download image!",
                 });
@@ -76,7 +83,7 @@ module.exports = {
             }
 
             // Process image with Jimp
-            let image = await Jimp.read(imageBuffer);
+            let image = await Jimp.read(buffer);
 
             // Get image dimensions
             const width = image.getWidth();
@@ -100,7 +107,7 @@ module.exports = {
             let yOffset = 0;
 
             if (topText || bottomText) {
-                const textPadding = 50;
+                const textPadding = 60;
                 if (topText) finalHeight += textPadding;
                 if (bottomText) finalHeight += textPadding;
                 if (topText) yOffset = textPadding;
@@ -111,42 +118,52 @@ module.exports = {
                 image = newImage;
             }
 
-            // Load font
-            const font = await Jimp.loadFont(Jimp.FONT_SANS_64_WHITE);
+            // Add text overlays if specified
+            if (topText || bottomText) {
+                // Load font
+                const font = await Jimp.loadFont(Jimp.FONT_SANS_64_WHITE);
 
-            // Add text overlays
-            if (topText) {
-                const textWidth = Jimp.measureText(font, topText.toUpperCase());
-                const x = (targetWidth - textWidth) / 2;
-                image.print(
-                    font,
-                    x,
-                    10,
-                    {
-                        text: topText.toUpperCase(),
-                        alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-                    },
-                    targetWidth,
-                );
+                if (topText) {
+                    image.print(
+                        font,
+                        0,
+                        5,
+                        {
+                            text: topText.toUpperCase(),
+                            alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+                        },
+                        targetWidth,
+                    );
+                }
+
+                if (bottomText) {
+                    const textY = finalHeight - 65;
+                    image.print(
+                        font,
+                        0,
+                        textY,
+                        {
+                            text: bottomText.toUpperCase(),
+                            alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+                        },
+                        targetWidth,
+                    );
+                }
             }
 
-            if (bottomText) {
-                const textY = finalHeight - 60;
-                image.print(
-                    font,
-                    0,
-                    textY,
-                    {
-                        text: bottomText.toUpperCase(),
-                        alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-                    },
-                    targetWidth,
-                );
+            // Ensure image is properly sized for sticker
+            if (image.getWidth() !== 512 || image.getHeight() !== 512) {
+                // Add padding to make it 512x512
+                const finalImage = new Jimp(512, 512, 0x00000000);
+                const xOffset = Math.floor((512 - image.getWidth()) / 2);
+                const yOffsetFinal = Math.floor((512 - image.getHeight()) / 2);
+                finalImage.composite(image, xOffset, yOffsetFinal);
+                image = finalImage;
             }
 
-            // Convert to buffer
+            // Convert to buffer (PNG format for sticker)
             const stickerBuffer = await image
-                .quality(95)
+                .quality(100)
                 .getBufferAsync(Jimp.MIME_PNG);
 
             // Send as sticker
