@@ -1,7 +1,8 @@
-const { Jimp } = require("jimp");
+const { Jimp, loadFont } = require("jimp");
 const { downloadContentFromMessage } = require("baileys");
 const { exec } = require("child_process");
 const { promisify } = require("util");
+import { SANS_10_BLACK } from "jimp/fonts";
 const fs = require("fs").promises;
 const path = require("path");
 const os = require("os");
@@ -41,7 +42,7 @@ module.exports = {
             if (!imageMessage) {
                 await yunwa.sendMessage(sender, {
                     text:
-                        "❌ *Cara pakai:* Reply foto atau kirim foto dengan caption !sticker [options]\n\n" +
+                        "❌ *Cara pakai:* Reply foto dengan !sticker [options]\n\n" +
                         "*Contoh:*\n" +
                         "• !sticker\n" +
                         "• !sticker t:Hello\n" +
@@ -132,30 +133,9 @@ module.exports = {
                 await newImage.composite(image, 0, yOffset);
                 image = newImage;
 
-                // Load font using proper Jimp v1.x syntax
-                const { loadFont } = require("jimp");
-                let font;
-                try {
-                    // Try to load built-in font
-                    font = await loadFont("sans-64-white");
-                } catch (e) {
-                    // Fallback to other font
-                    try {
-                        font = await loadFont("sans-32-white");
-                    } catch (e2) {
-                        console.error("Could not load font, skipping text");
-                        // If font fails, continue without text
-                        image = await image.resize({
-                            w: targetWidth,
-                            h: targetHeight,
-                        });
-                        throw new Error(
-                            "Font tidak tersedia. Gunakan sticker tanpa text.",
-                        );
-                    }
-                }
+                const font = await loadFont(SANS_10_BLACK);
 
-                if (topText && font) {
+                if (topText) {
                     image.print({
                         font,
                         x: 0,
@@ -168,7 +148,7 @@ module.exports = {
                     });
                 }
 
-                if (bottomText && font) {
+                if (bottomText) {
                     const textY = finalHeight - 65;
                     image.print({
                         font,
@@ -230,7 +210,7 @@ module.exports = {
             console.error("Error in sticker command:", error);
             console.error("Stack:", error.stack);
 
-            let errorMsg = `❌ Error: ${error.message}\n\n💡 Pastikan reply ke foto atau kirim foto dengan caption !sticker`;
+            let errorMsg = `❌ Error: ${error.message}\n\n💡 Pastikan reply ke foto!`;
 
             // Check if cwebp is not installed
             if (error.message.includes("cwebp")) {
