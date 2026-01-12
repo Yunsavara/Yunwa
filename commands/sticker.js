@@ -1,5 +1,5 @@
 const { Jimp, loadFont } = require("jimp");
-const { SANS_64_WHITE } = require("jimp/fonts");
+const { SANS_64_WHITE, SANS_64_BLACK } = require("jimp/fonts");
 const { downloadContentFromMessage } = require("baileys");
 const { exec } = require("child_process");
 const { promisify } = require("util");
@@ -114,19 +114,49 @@ module.exports = {
             // Resize
             image = await image.resize({ w: targetWidth, h: targetHeight });
 
-            // Add text overlay directly on image if needed
+            // Add text overlay with stroke effect if needed
             if (topText || bottomText) {
-                // Load font - SANS_64_WHITE from jimp/fonts
-                const font = await loadFont(SANS_64_WHITE);
+                // Load fonts
+                const fontWhite = await loadFont(SANS_64_WHITE);
+                const fontBlack = await loadFont(SANS_64_BLACK);
 
                 if (topText) {
-                    // Text at top - overlay on image
+                    const text = topText.toUpperCase();
+                    const topY = 10;
+
+                    // Create stroke effect by printing black text multiple times (offset)
+                    const strokeOffsets = [
+                        [-2, -2],
+                        [-2, 0],
+                        [-2, 2],
+                        [0, -2],
+                        [0, 2],
+                        [2, -2],
+                        [2, 0],
+                        [2, 2],
+                    ];
+
+                    // Print black stroke
+                    for (const [offsetX, offsetY] of strokeOffsets) {
+                        image.print({
+                            font: fontBlack,
+                            x: offsetX,
+                            y: topY + offsetY,
+                            text: {
+                                text: text,
+                                alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+                            },
+                            maxWidth: targetWidth,
+                        });
+                    }
+
+                    // Print white text on top
                     image.print({
-                        font,
+                        font: fontWhite,
                         x: 0,
-                        y: 10,
+                        y: topY,
                         text: {
-                            text: topText.toUpperCase(),
+                            text: text,
                             alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
                         },
                         maxWidth: targetWidth,
@@ -134,14 +164,42 @@ module.exports = {
                 }
 
                 if (bottomText) {
-                    // Text at bottom - overlay on image
-                    const textY = targetHeight - 75;
+                    const text = bottomText.toUpperCase();
+                    const bottomY = targetHeight - 75;
+
+                    // Create stroke effect by printing black text multiple times (offset)
+                    const strokeOffsets = [
+                        [-2, -2],
+                        [-2, 0],
+                        [-2, 2],
+                        [0, -2],
+                        [0, 2],
+                        [2, -2],
+                        [2, 0],
+                        [2, 2],
+                    ];
+
+                    // Print black stroke
+                    for (const [offsetX, offsetY] of strokeOffsets) {
+                        image.print({
+                            font: fontBlack,
+                            x: offsetX,
+                            y: bottomY + offsetY,
+                            text: {
+                                text: text,
+                                alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+                            },
+                            maxWidth: targetWidth,
+                        });
+                    }
+
+                    // Print white text on top
                     image.print({
-                        font,
+                        font: fontWhite,
                         x: 0,
-                        y: textY,
+                        y: bottomY,
                         text: {
-                            text: bottomText.toUpperCase(),
+                            text: text,
                             alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
                         },
                         maxWidth: targetWidth,
