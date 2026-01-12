@@ -1,4 +1,4 @@
-const { Jimp } = require("jimp"); // Perhatikan: destructuring
+const { Jimp } = require("jimp");
 const { downloadContentFromMessage } = require("baileys");
 
 /**
@@ -157,10 +157,10 @@ module.exports = {
                 image = finalImage;
             }
 
-            // Convert to buffer (v1.x syntax)
-            const stickerBuffer = await image.getBuffer("image/png");
+            // Convert to WebP format (INI YANG PENTING!)
+            const stickerBuffer = await image.getBuffer("image/webp");
 
-            // Send sticker
+            // Send sticker with proper metadata
             await yunwa.sendMessage(sender, {
                 sticker: stickerBuffer,
             });
