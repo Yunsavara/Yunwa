@@ -1,4 +1,4 @@
-const Jimp = require("jimp");
+const { Jimp } = require("jimp");
 const { downloadContentFromMessage } = require("baileys");
 
 /**
@@ -86,8 +86,8 @@ module.exports = {
             let image = await Jimp.read(buffer);
 
             // Get image dimensions
-            const width = image.getWidth();
-            const height = image.getHeight();
+            const width = image.width;
+            const height = image.height;
 
             // Calculate dimensions to fit 512x512 maintaining aspect ratio
             let targetWidth, targetHeight;
@@ -100,7 +100,7 @@ module.exports = {
             }
 
             // Resize image
-            image = image.resize(targetWidth, targetHeight);
+            image = await image.resize({ w: targetWidth, h: targetHeight });
 
             // Create canvas with padding for text if needed
             let finalHeight = targetHeight;
@@ -113,7 +113,11 @@ module.exports = {
                 if (topText) yOffset = textPadding;
 
                 // Create new image with extra space for text
-                const newImage = new Jimp(targetWidth, finalHeight, 0x00000000);
+                const newImage = new Jimp({
+                    width: targetWidth,
+                    height: finalHeight,
+                    color: 0x00000000,
+                });
                 newImage.composite(image, 0, yOffset);
                 image = newImage;
             }
@@ -124,47 +128,49 @@ module.exports = {
                 const font = await Jimp.loadFont(Jimp.FONT_SANS_64_WHITE);
 
                 if (topText) {
-                    image.print(
+                    image.print({
                         font,
-                        0,
-                        5,
-                        {
+                        x: 0,
+                        y: 5,
+                        text: {
                             text: topText.toUpperCase(),
                             alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
                         },
-                        targetWidth,
-                    );
+                        maxWidth: targetWidth,
+                    });
                 }
 
                 if (bottomText) {
                     const textY = finalHeight - 65;
-                    image.print(
+                    image.print({
                         font,
-                        0,
-                        textY,
-                        {
+                        x: 0,
+                        y: textY,
+                        text: {
                             text: bottomText.toUpperCase(),
                             alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
                         },
-                        targetWidth,
-                    );
+                        maxWidth: targetWidth,
+                    });
                 }
             }
 
             // Ensure image is properly sized for sticker
-            if (image.getWidth() !== 512 || image.getHeight() !== 512) {
+            if (image.width !== 512 || image.height !== 512) {
                 // Add padding to make it 512x512
-                const finalImage = new Jimp(512, 512, 0x00000000);
-                const xOffset = Math.floor((512 - image.getWidth()) / 2);
-                const yOffsetFinal = Math.floor((512 - image.getHeight()) / 2);
+                const finalImage = new Jimp({
+                    width: 512,
+                    height: 512,
+                    color: 0x00000000,
+                });
+                const xOffset = Math.floor((512 - image.width) / 2);
+                const yOffsetFinal = Math.floor((512 - image.height) / 2);
                 finalImage.composite(image, xOffset, yOffsetFinal);
                 image = finalImage;
             }
 
             // Convert to buffer (PNG format for sticker)
-            const stickerBuffer = await image
-                .quality(100)
-                .getBufferAsync(Jimp.MIME_PNG);
+            const stickerBuffer = await image.getBuffer("image/png");
 
             // Send as sticker
             await yunwa.sendMessage(sender, {
