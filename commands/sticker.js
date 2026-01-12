@@ -118,32 +118,26 @@ module.exports = {
             // Get dimensions
             const width = image.width;
             const height = image.height;
+            const targetSize = 512;
 
-            // Calculate target dimensions
-            let targetWidth, targetHeight;
-            if (width > height) {
-                targetWidth = 512;
-                targetHeight = Math.round((height / width) * 512);
-            } else {
-                targetHeight = 512;
-                targetWidth = Math.round((width / height) * 512);
-            }
+            // Resize to cover 512x512 (zoom-in/crop strategy)
+            // Calculate scale to cover entire 512x512 area
+            const scale = Math.max(targetSize / width, targetSize / height);
+            const scaledWidth = Math.round(width * scale);
+            const scaledHeight = Math.round(height * scale);
 
-            // Resize
-            image = await image.resize({ w: targetWidth, h: targetHeight });
+            // Resize with cover
+            image = await image.resize({ w: scaledWidth, h: scaledHeight });
 
-            // Make 512x512 with padding
-            if (image.width !== 512 || image.height !== 512) {
-                const finalImage = new Jimp({
-                    width: 512,
-                    height: 512,
-                    color: 0x00000000,
-                });
-                const xOffset = Math.floor((512 - image.width) / 2);
-                const yOffsetFinal = Math.floor((512 - image.height) / 2);
-                await finalImage.composite(image, xOffset, yOffsetFinal);
-                image = finalImage;
-            }
+            // Crop to 512x512 from center
+            const cropX = Math.floor((scaledWidth - targetSize) / 2);
+            const cropY = Math.floor((scaledHeight - targetSize) / 2);
+            image = await image.crop({
+                x: cropX,
+                y: cropY,
+                w: targetSize,
+                h: targetSize,
+            });
 
             // Save PNG to temp file
             const tmpDir = os.tmpdir();
