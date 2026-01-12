@@ -117,7 +117,7 @@ async function checkIfNeedsWebSearch(question, history = []) {
 async function askGroqWithContext(question, history = []) {
     try {
         const groq = getGroqClient();
-        const { searchWeb } = require("./tavily");
+        const { searchWeb, getLastSearchSources } = require("./tavily");
 
         // Selalu lakukan web search
         console.log("Searching web for context...");
@@ -130,9 +130,11 @@ async function askGroqWithContext(question, history = []) {
                 role: "system",
                 content:
                     "Kamu asisten AI yang menjawab berdasarkan konteks history dan web search. " +
-                    "Jawab jelas dan padat. Cite sumber dengan [1], [2] jika relevan. " +
+                    "Jawab jelas dan padat dalam bahasa Indonesia. " +
                     "Gunakan konteks history jika ada. " +
-                    "Jawab dalam bahasa Indonesia. Gunakan *bold* untuk penekanan penting saja.",
+                    "Cite sumber dengan [1], [2], [3] saat mengutip informasi dari web. " +
+                    "Fokus pada jawaban, sumber akan ditambahkan otomatis. " +
+                    "Gunakan *bold* untuk penekanan penting saja.",
             },
             ...history.slice(-6), // Ambil 6 message terakhir dari history
             {
@@ -148,9 +150,18 @@ async function askGroqWithContext(question, history = []) {
             max_tokens: 2048,
         });
 
-        const response =
+        let response =
             chatCompletion.choices[0]?.message?.content ||
             "Maaf, tidak ada respon.";
+
+        // Append sumber dari Tavily
+        const sources = getLastSearchSources();
+        if (sources && sources.length > 0) {
+            response += "\n\n─────────────\n*Sumber:*\n";
+            sources.forEach((source, index) => {
+                response += `[${index + 1}] ${source.title}\n${source.url}\n\n`;
+            });
+        }
 
         return convertToWhatsAppFormat(response);
     } catch (error) {

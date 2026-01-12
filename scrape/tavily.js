@@ -1,5 +1,7 @@
 const axios = require("axios");
 
+let lastSearchSources = [];
+
 /**
  * Search web menggunakan Tavily API
  * @param {string} query - Search query
@@ -25,6 +27,9 @@ async function searchWeb(query) {
         const results = response.data;
         let formattedResults = "";
 
+        // Reset dan simpan sources
+        lastSearchSources = [];
+
         if (results.answer) {
             formattedResults += `Ringkasan: ${results.answer}\n\n`;
         }
@@ -32,6 +37,12 @@ async function searchWeb(query) {
         if (results.results && results.results.length > 0) {
             formattedResults += "Sumber Informasi:\n\n";
             results.results.forEach((result, index) => {
+                // Simpan untuk referensi
+                lastSearchSources.push({
+                    title: result.title,
+                    url: result.url,
+                });
+
                 // Format: [1] Title
                 // Content
                 // URL: https://...
@@ -48,4 +59,8 @@ async function searchWeb(query) {
     }
 }
 
-module.exports = { searchWeb };
+function getLastSearchSources() {
+    return lastSearchSources;
+}
+
+module.exports = { searchWeb, getLastSearchSources };
