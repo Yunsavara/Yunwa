@@ -3,13 +3,9 @@ const Groq = require("groq-sdk");
 /**
  * Generate motivational quote using Groq AI
  * @param {string} topic - Topic for the quote (optional)
- * @param {string} language - Language for the quote (default: 'Indonesia')
  * @returns {Promise<Object>} Quote object with text and author
  */
-async function generateQuote(
-    topic = "motivasi kehidupan",
-    language = "Indonesia",
-) {
+async function generateQuote(topic = null) {
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
         throw new Error("GROQ_API_KEY not configured! Run setup wizard.");
@@ -18,15 +14,15 @@ async function generateQuote(
     const groq = new Groq({ apiKey });
 
     const prompt = topic
-        ? `Generate a deep and meaningful quote about "${topic}" in ${language} language. Format: Just the quote text (without quotes marks), then on a new line: — Author Name`
-        : `Generate a random inspirational quote in ${language} language. Format: Just the quote text (without quotes marks), then on a new line: — Author Name`;
+        ? `Give me a real, famous quote about "${topic}". The quote must be from a well-known person (philosopher, scientist, author, leader, etc). Do not invent quotes or authors. Respond in the same language as the topic provided. Format: the quote text (without quotation marks), then on a new line: — Author Name`
+        : `Give me a real, famous inspirational quote. The quote must be from a well-known person (philosopher, scientist, author, leader, etc). Do not invent quotes or authors. Format: the quote text (without quotation marks), then on a new line: — Author Name`;
 
     try {
         const chatCompletion = await groq.chat.completions.create({
             messages: [
                 {
                     role: "system",
-                    content: `You are a wise philosopher who generates meaningful quotes. Always respond in the specified language. Format your response exactly as: the quote text, then a new line, then "— Author Name". Do not use quotation marks around the quote.`,
+                    content: `You are a wise assistant who only provides real, famous quotes from well-known people (philosophers, scientists, authors, leaders, etc). Never invent quotes or authors. When given a topic, detect the language of the topic and respond in that same language. If no topic is given, use English. Format your response exactly as: the quote text, then a new line, then "— Author Name". Do not use quotation marks around the quote.`,
                 },
                 {
                     role: "user",

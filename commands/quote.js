@@ -9,8 +9,7 @@ const { generateQuote } = require("../scrape/quote");
  */
 module.exports = {
     name: "quote",
-    description:
-        "Generate an inspirational quote. Use !quote [topic] to specify a topic.",
+    description: "Generate an inspirational quote.",
     category: "fun",
 
     async execute(yunwa, msg, sender, pushname, args = []) {
