@@ -123,25 +123,24 @@ module.exports = {
                 if (topText) {
                     const text = topText.toUpperCase();
                     const topY = 10;
-                    const centerX = targetWidth / 2;
 
                     // Create stroke effect by printing black text multiple times (offset)
                     const strokeOffsets = [
-                        [-2, -2],
-                        [-2, 0],
-                        [-2, 2],
-                        [0, -2],
-                        [0, 2],
-                        [2, -2],
-                        [2, 0],
-                        [2, 2],
+                        [-3, -3],
+                        [-3, 0],
+                        [-3, 3],
+                        [0, -3],
+                        [0, 3],
+                        [3, -3],
+                        [3, 0],
+                        [3, 3],
                     ];
 
                     // Print black stroke
                     for (const [offsetX, offsetY] of strokeOffsets) {
                         image.print({
                             font: fontBlack,
-                            x: centerX + offsetX,
+                            x: offsetX,
                             y: topY + offsetY,
                             text: {
                                 text: text,
@@ -151,10 +150,10 @@ module.exports = {
                         });
                     }
 
-                    // Print white text on top
+                    // Print white text on top (centered)
                     image.print({
                         font: fontWhite,
-                        x: centerX,
+                        x: 0,
                         y: topY,
                         text: {
                             text: text,
@@ -167,25 +166,24 @@ module.exports = {
                 if (bottomText) {
                     const text = bottomText.toUpperCase();
                     const bottomY = targetHeight - 75;
-                    const centerX = targetWidth / 2;
 
                     // Create stroke effect by printing black text multiple times (offset)
                     const strokeOffsets = [
-                        [-2, -2],
-                        [-2, 0],
-                        [-2, 2],
-                        [0, -2],
-                        [0, 2],
-                        [2, -2],
-                        [2, 0],
-                        [2, 2],
+                        [-3, -3],
+                        [-3, 0],
+                        [-3, 3],
+                        [0, -3],
+                        [0, 3],
+                        [3, -3],
+                        [3, 0],
+                        [3, 3],
                     ];
 
                     // Print black stroke
                     for (const [offsetX, offsetY] of strokeOffsets) {
                         image.print({
                             font: fontBlack,
-                            x: centerX + offsetX,
+                            x: offsetX,
                             y: bottomY + offsetY,
                             text: {
                                 text: text,
@@ -195,10 +193,10 @@ module.exports = {
                         });
                     }
 
-                    // Print white text on top
+                    // Print white text on top (centered)
                     image.print({
                         font: fontWhite,
-                        x: centerX,
+                        x: 0,
                         y: bottomY,
                         text: {
                             text: text,
