@@ -157,7 +157,7 @@ async function askGroqWithContext(question, history = []) {
         // Append sumber dari Tavily
         const sources = getLastSearchSources();
         if (sources && sources.length > 0) {
-            response += "\n\n─────────────\n*Sumber:*\n";
+            response += "\n─────────────\n*Sumber:*\n";
             sources.forEach((source, index) => {
                 response += `[${index + 1}] ${source.title}\n${source.url}\n\n`;
             });
