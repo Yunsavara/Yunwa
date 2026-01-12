@@ -24,11 +24,21 @@ module.exports = {
             await yunwa.sendPresenceUpdate("composing", sender);
 
             // Check if message is a reply to an image
+            // Handle both private chat and group
             const quotedMsg =
                 msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-            const hasImage = quotedMsg?.imageMessage;
 
-            if (!hasImage) {
+            // Check various possible locations for image
+            let imageMessage = null;
+
+            if (quotedMsg?.imageMessage) {
+                imageMessage = quotedMsg.imageMessage;
+            } else if (msg.message?.imageMessage) {
+                // Direct image (not quoted)
+                imageMessage = msg.message.imageMessage;
+            }
+
+            if (!imageMessage) {
                 await yunwa.sendMessage(sender, {
                     text:
                         "❌ *Cara pakai:* Reply foto dengan !sticker [options]\n\n" +
@@ -70,7 +80,7 @@ module.exports = {
 
             // Download the image
             const stream = await downloadContentFromMessage(
-                quotedMsg.imageMessage,
+                imageMessage,
                 "image",
             );
 
@@ -168,8 +178,15 @@ module.exports = {
             // Save PNG to temp file
             const tmpDir = os.tmpdir();
             const timestamp = Date.now();
-            tempPngPath = path.join(tmpDir, `sticker_${timestamp}.png`);
-            tempWebpPath = path.join(tmpDir, `sticker_${timestamp}.webp`);
+            const randomId = Math.random().toString(36).substring(7);
+            tempPngPath = path.join(
+                tmpDir,
+                `sticker_${timestamp}_${randomId}.png`,
+            );
+            tempWebpPath = path.join(
+                tmpDir,
+                `sticker_${timestamp}_${randomId}.webp`,
+            );
 
             const pngBuffer = await image.getBuffer("image/png");
             await fs.writeFile(tempPngPath, pngBuffer);
@@ -190,6 +207,7 @@ module.exports = {
             await yunwa.sendPresenceUpdate("paused", sender);
         } catch (error) {
             console.error("Error in sticker command:", error);
+            console.error("Stack:", error.stack);
 
             let errorMsg = `❌ Error: ${error.message}\n\n💡 Pastikan reply ke foto!`;
 
