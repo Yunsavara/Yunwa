@@ -1,4 +1,4 @@
-const { Jimp } = require("jimp");
+const { Jimp, loadFont } = require("jimp");
 const { downloadContentFromMessage } = require("baileys");
 
 /**
@@ -118,14 +118,14 @@ module.exports = {
                     height: finalHeight,
                     color: 0x00000000,
                 });
-                newImage.composite(image, 0, yOffset);
+                await newImage.composite(image, 0, yOffset);
                 image = newImage;
             }
 
             // Add text overlays if specified
             if (topText || bottomText) {
                 // Load font
-                const font = await Jimp.loadFont(Jimp.FONT_SANS_64_WHITE);
+                const font = await loadFont("SANS_64_WHITE");
 
                 if (topText) {
                     image.print({
@@ -165,7 +165,7 @@ module.exports = {
                 });
                 const xOffset = Math.floor((512 - image.width) / 2);
                 const yOffsetFinal = Math.floor((512 - image.height) / 2);
-                finalImage.composite(image, xOffset, yOffsetFinal);
+                await finalImage.composite(image, xOffset, yOffsetFinal);
                 image = finalImage;
             }
 
