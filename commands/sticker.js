@@ -1,5 +1,10 @@
 const { Jimp } = require("jimp");
 const { downloadContentFromMessage } = require("baileys");
+const webp = require("@jimp/js-webp");
+
+// Register WebP plugin
+Jimp.decoders["image/webp"] = webp.decode;
+Jimp.encoders["image/webp"] = webp.encode;
 
 /**
  * Sticker command - Convert image to WhatsApp sticker with optional text
@@ -73,7 +78,7 @@ module.exports = {
                 throw new Error("Gagal download gambar");
             }
 
-            // Process with Jimp (v1.x syntax)
+            // Process with Jimp
             let image = await Jimp.read(buffer);
 
             // Get dimensions
@@ -90,7 +95,7 @@ module.exports = {
                 targetWidth = Math.round((width / height) * 512);
             }
 
-            // Resize (v1.x syntax)
+            // Resize
             image = await image.resize({ w: targetWidth, h: targetHeight });
 
             // Add text if needed
@@ -103,7 +108,7 @@ module.exports = {
                 if (bottomText) finalHeight += textPadding;
                 if (topText) yOffset = textPadding;
 
-                // Create new canvas (v1.x syntax)
+                // Create new canvas
                 const newImage = new Jimp({
                     width: targetWidth,
                     height: finalHeight,
@@ -112,7 +117,7 @@ module.exports = {
                 await newImage.composite(image, 0, yOffset);
                 image = newImage;
 
-                // Load font (v1.x syntax)
+                // Load font
                 const { loadFont } = require("jimp");
                 const font = await loadFont("SANS_64_WHITE");
 
@@ -157,10 +162,10 @@ module.exports = {
                 image = finalImage;
             }
 
-            // Convert to WebP format (INI YANG PENTING!)
+            // Convert to WebP
             const stickerBuffer = await image.getBuffer("image/webp");
 
-            // Send sticker with proper metadata
+            // Send sticker
             await yunwa.sendMessage(sender, {
                 sticker: stickerBuffer,
             });
