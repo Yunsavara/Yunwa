@@ -1,14 +1,13 @@
-const sharp = require("sharp");
-const axios = require("axios");
+const Jimp = require("jimp");
 
 /**
  * Sticker command - Convert image to WhatsApp sticker with optional text
- * Usage: !sticker [top:text] [bottom:text]
+ * Usage: !sticker [t:text] [b:text]
  * Examples:
  *   !sticker (reply to image)
- *   !sticker top:Hello
- *   !sticker bottom:World
- *   !sticker top:Hello bottom:World
+ *   !sticker t:Hello
+ *   !sticker b:World
+ *   !sticker t:Hello b:World
  */
 module.exports = {
     name: "sticker",
@@ -30,9 +29,9 @@ module.exports = {
                         "❌ *How to use:* Reply to an image with !sticker [options]\n\n" +
                         "*Examples:*\n" +
                         "• !sticker\n" +
-                        "• !sticker top:Hello\n" +
-                        "• !sticker bottom:World\n" +
-                        "• !sticker top:Hello bottom:World\n\n" +
+                        "• !sticker t:Hello\n" +
+                        "• !sticker b:World\n" +
+                        "• !sticker t:Hello b:World\n\n" +
                         "⚠️ Max 30 characters per text",
                 });
                 return;
@@ -44,16 +43,16 @@ module.exports = {
 
             if (args && args.length > 0) {
                 for (const arg of args) {
-                    if (arg.startsWith("top:")) {
-                        topText = arg.slice(4).trim();
+                    if (arg.startsWith("t:")) {
+                        topText = arg.slice(2).trim();
                         if (topText.length > 30) {
                             await yunwa.sendMessage(sender, {
                                 text: "❌ Top text must be 30 characters or less!",
                             });
                             return;
                         }
-                    } else if (arg.startsWith("bottom:")) {
-                        bottomText = arg.slice(7).trim();
+                    } else if (arg.startsWith("b:")) {
+                        bottomText = arg.slice(2).trim();
                         if (bottomText.length > 30) {
                             await yunwa.sendMessage(sender, {
                                 text: "❌ Bottom text must be 30 characters or less!",
@@ -76,12 +75,12 @@ module.exports = {
                 return;
             }
 
-            // Process image with sharp
-            let image = sharp(imageBuffer);
+            // Process image with Jimp
+            let image = await Jimp.read(imageBuffer);
 
-            // Get image metadata
-            const metadata = await image.metadata();
-            const { width, height } = metadata;
+            // Get image dimensions
+            const width = image.getWidth();
+            const height = image.getHeight();
 
             // Calculate dimensions to fit 512x512 maintaining aspect ratio
             let targetWidth, targetHeight;
@@ -94,31 +93,61 @@ module.exports = {
             }
 
             // Resize image
-            image = image.resize(targetWidth, targetHeight, {
-                fit: "contain",
-                background: { r: 0, g: 0, b: 0, alpha: 0 },
-            });
+            image = image.resize(targetWidth, targetHeight);
 
-            // Add text overlays if specified
+            // Create canvas with padding for text if needed
+            let finalHeight = targetHeight;
+            let yOffset = 0;
+
             if (topText || bottomText) {
-                const svgOverlay = await createTextOverlay(
-                    topText,
-                    bottomText,
-                    targetWidth,
-                    targetHeight,
-                );
+                const textPadding = 50;
+                if (topText) finalHeight += textPadding;
+                if (bottomText) finalHeight += textPadding;
+                if (topText) yOffset = textPadding;
 
-                image = image.composite([
-                    {
-                        input: Buffer.from(svgOverlay),
-                        top: 0,
-                        left: 0,
-                    },
-                ]);
+                // Create new image with extra space for text
+                const newImage = new Jimp(targetWidth, finalHeight, 0x00000000);
+                newImage.composite(image, 0, yOffset);
+                image = newImage;
             }
 
-            // Convert to WebP format (sticker format)
-            const stickerBuffer = await image.webp({ quality: 95 }).toBuffer();
+            // Load font
+            const font = await Jimp.loadFont(Jimp.FONT_SANS_64_WHITE);
+
+            // Add text overlays
+            if (topText) {
+                const textWidth = Jimp.measureText(font, topText.toUpperCase());
+                const x = (targetWidth - textWidth) / 2;
+                image.print(
+                    font,
+                    x,
+                    10,
+                    {
+                        text: topText.toUpperCase(),
+                        alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+                    },
+                    targetWidth,
+                );
+            }
+
+            if (bottomText) {
+                const textY = finalHeight - 60;
+                image.print(
+                    font,
+                    0,
+                    textY,
+                    {
+                        text: bottomText.toUpperCase(),
+                        alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+                    },
+                    targetWidth,
+                );
+            }
+
+            // Convert to buffer
+            const stickerBuffer = await image
+                .quality(95)
+                .getBufferAsync(Jimp.MIME_PNG);
 
             // Send as sticker
             await yunwa.sendMessage(sender, {
@@ -134,75 +163,3 @@ module.exports = {
         }
     },
 };
-
-/**
- * Create SVG overlay with text
- * @param {string} topText - Text to display at top
- * @param {string} bottomText - Text to display at bottom
- * @param {number} width - Image width
- * @param {number} height - Image height
- * @returns {string} SVG markup
- */
-function createTextOverlay(topText, bottomText, width, height) {
-    const fontSize = 40;
-    const padding = 10;
-    const strokeWidth = 3;
-
-    let svgElements = [];
-
-    // Add top text
-    if (topText) {
-        svgElements.push(`
-            <text
-                x="50%"
-                y="${fontSize + padding}"
-                font-family="Impact, Arial Black, sans-serif"
-                font-size="${fontSize}"
-                font-weight="900"
-                fill="white"
-                stroke="black"
-                stroke-width="${strokeWidth}"
-                text-anchor="middle"
-                dominant-baseline="hanging"
-            >${escapeXml(topText.toUpperCase())}</text>
-        `);
-    }
-
-    // Add bottom text
-    if (bottomText) {
-        svgElements.push(`
-            <text
-                x="50%"
-                y="${height - padding}"
-                font-family="Impact, Arial Black, sans-serif"
-                font-size="${fontSize}"
-                font-weight="900"
-                fill="white"
-                stroke="black"
-                stroke-width="${strokeWidth}"
-                text-anchor="middle"
-                dominant-baseline="auto"
-            >${escapeXml(bottomText.toUpperCase())}</text>
-        `);
-    }
-
-    return `
-        <svg width="${width}" height="${height}">
-            ${svgElements.join("\n")}
-        </svg>
-    `;
-}
-
-/**
- * Escape XML special characters
- * @param {string} text - Text to escape
- * @returns {string} Escaped text
- */
-function escapeXml(text) {
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&apos;");
-}
