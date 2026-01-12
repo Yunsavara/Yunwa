@@ -1,4 +1,4 @@
-const Jimp = require("jimp");
+const { Jimp } = require("jimp"); // Perhatikan: destructuring
 const { downloadContentFromMessage } = require("baileys");
 
 /**
@@ -73,12 +73,12 @@ module.exports = {
                 throw new Error("Gagal download gambar");
             }
 
-            // Process with Jimp
+            // Process with Jimp (v1.x syntax)
             let image = await Jimp.read(buffer);
 
             // Get dimensions
-            const width = image.bitmap.width;
-            const height = image.bitmap.height;
+            const width = image.width;
+            const height = image.height;
 
             // Calculate target dimensions
             let targetWidth, targetHeight;
@@ -90,8 +90,8 @@ module.exports = {
                 targetWidth = Math.round((width / height) * 512);
             }
 
-            // Resize
-            image = image.resize(targetWidth, targetHeight);
+            // Resize (v1.x syntax)
+            image = await image.resize({ w: targetWidth, h: targetHeight });
 
             // Add text if needed
             if (topText || bottomText) {
@@ -103,55 +103,62 @@ module.exports = {
                 if (bottomText) finalHeight += textPadding;
                 if (topText) yOffset = textPadding;
 
-                // Create new canvas
-                const newImage = new Jimp(targetWidth, finalHeight, 0x00000000);
-                newImage.composite(image, 0, yOffset);
+                // Create new canvas (v1.x syntax)
+                const newImage = new Jimp({
+                    width: targetWidth,
+                    height: finalHeight,
+                    color: 0x00000000,
+                });
+                await newImage.composite(image, 0, yOffset);
                 image = newImage;
 
-                // Load font
-                const font = await Jimp.loadFont(Jimp.FONT_SANS_64_WHITE);
+                // Load font (v1.x syntax)
+                const { loadFont } = require("jimp");
+                const font = await loadFont("SANS_64_WHITE");
 
                 if (topText) {
-                    image.print(
+                    image.print({
                         font,
-                        0,
-                        5,
-                        {
+                        x: 0,
+                        y: 5,
+                        text: {
                             text: topText.toUpperCase(),
                             alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
                         },
-                        targetWidth,
-                    );
+                        maxWidth: targetWidth,
+                    });
                 }
 
                 if (bottomText) {
                     const textY = finalHeight - 65;
-                    image.print(
+                    image.print({
                         font,
-                        0,
-                        textY,
-                        {
+                        x: 0,
+                        y: textY,
+                        text: {
                             text: bottomText.toUpperCase(),
                             alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
                         },
-                        targetWidth,
-                    );
+                        maxWidth: targetWidth,
+                    });
                 }
             }
 
             // Make 512x512 with padding
-            if (image.bitmap.width !== 512 || image.bitmap.height !== 512) {
-                const finalImage = new Jimp(512, 512, 0x00000000);
-                const xOffset = Math.floor((512 - image.bitmap.width) / 2);
-                const yOffsetFinal = Math.floor(
-                    (512 - image.bitmap.height) / 2,
-                );
-                finalImage.composite(image, xOffset, yOffsetFinal);
+            if (image.width !== 512 || image.height !== 512) {
+                const finalImage = new Jimp({
+                    width: 512,
+                    height: 512,
+                    color: 0x00000000,
+                });
+                const xOffset = Math.floor((512 - image.width) / 2);
+                const yOffsetFinal = Math.floor((512 - image.height) / 2);
+                await finalImage.composite(image, xOffset, yOffsetFinal);
                 image = finalImage;
             }
 
-            // Convert to WebP format for better compatibility
-            const stickerBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
+            // Convert to buffer (v1.x syntax)
+            const stickerBuffer = await image.getBuffer("image/png");
 
             // Send sticker
             await yunwa.sendMessage(sender, {
