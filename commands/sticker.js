@@ -114,29 +114,13 @@ module.exports = {
             // Resize
             image = await image.resize({ w: targetWidth, h: targetHeight });
 
-            // Add text if needed
+            // Add text overlay directly on image if needed
             if (topText || bottomText) {
-                const textPadding = 80;
-                let finalHeight = targetHeight;
-                let yOffset = 0;
-
-                if (topText) finalHeight += textPadding;
-                if (bottomText) finalHeight += textPadding;
-                if (topText) yOffset = textPadding;
-
-                const newImage = new Jimp({
-                    width: targetWidth,
-                    height: finalHeight,
-                    color: 0x00000000,
-                });
-
-                await newImage.composite(image, 0, yOffset);
-                image = newImage;
-
                 // Load font - SANS_64_WHITE from jimp/fonts
                 const font = await loadFont(SANS_64_WHITE);
 
                 if (topText) {
+                    // Text at top - overlay on image
                     image.print({
                         font,
                         x: 0,
@@ -150,7 +134,8 @@ module.exports = {
                 }
 
                 if (bottomText) {
-                    const textY = finalHeight - 70;
+                    // Text at bottom - overlay on image
+                    const textY = targetHeight - 75;
                     image.print({
                         font,
                         x: 0,
