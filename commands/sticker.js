@@ -167,36 +167,43 @@ module.exports = {
 
             // Add text with ImageMagick if text is provided
             if (topText || bottomText) {
-                // Calculate font size based on text length
+                // Calculate font size based on text length with proper padding
                 const calculateFontSize = (text, imageWidth) => {
-                    const baseSize = 60;
-                    const charWidth = baseSize * 0.6;
-                    const maxWidth = imageWidth - 40; // padding
-                    const textWidth = text.length * charWidth;
+                    const baseFontSize = 55;
+                    const minFontSize = 25;
+                    const horizontalPadding = 80; // Padding kiri-kanan total
+                    const charWidthRatio = 0.65; // Ratio lebar karakter terhadap font size
 
-                    if (textWidth > maxWidth) {
-                        return Math.floor(maxWidth / text.length / 0.6);
+                    const availableWidth = imageWidth - horizontalPadding;
+                    const estimatedTextWidth =
+                        text.length * baseFontSize * charWidthRatio;
+
+                    if (estimatedTextWidth > availableWidth) {
+                        // Scale down font size
+                        const scaledSize = Math.floor(
+                            availableWidth / text.length / charWidthRatio,
+                        );
+                        return Math.max(scaledSize, minFontSize);
                     }
-                    return baseSize;
+
+                    return baseFontSize;
                 };
 
                 let commands = [];
 
                 if (topText) {
                     const fontSize = calculateFontSize(topText, 512);
-                    // Escape single quotes in text for shell command
                     const escapedText = topText.replace(/'/g, "'\\''");
                     commands.push(
-                        `-gravity North -pointsize ${fontSize} -fill white -stroke black -strokewidth 5 -font DejaVu-Sans-Bold -annotate +0+20 '${escapedText.toUpperCase()}'`,
+                        `-gravity North -pointsize ${fontSize} -fill white -stroke black -strokewidth 3 -font DejaVu-Sans-Bold -annotate +0+25 '${escapedText.toUpperCase()}'`,
                     );
                 }
 
                 if (bottomText) {
                     const fontSize = calculateFontSize(bottomText, 512);
-                    // Escape single quotes in text for shell command
                     const escapedText = bottomText.replace(/'/g, "'\\''");
                     commands.push(
-                        `-gravity South -pointsize ${fontSize} -fill white -stroke black -strokewidth 5 -font DejaVu-Sans-Bold -annotate +0+20 '${escapedText.toUpperCase()}'`,
+                        `-gravity South -pointsize ${fontSize} -fill white -stroke black -strokewidth 3 -font DejaVu-Sans-Bold -annotate +0+25 '${escapedText.toUpperCase()}'`,
                     );
                 }
 
