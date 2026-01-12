@@ -2,7 +2,7 @@ const { Jimp, loadFont } = require("jimp");
 const { downloadContentFromMessage } = require("baileys");
 const { exec } = require("child_process");
 const { promisify } = require("util");
-import { SANS_10_BLACK } from "jimp/fonts";
+const { SANS_10_BLACK } = require("jimp/fonts");
 const fs = require("fs").promises;
 const path = require("path");
 const os = require("os");
