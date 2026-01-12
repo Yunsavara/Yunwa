@@ -44,7 +44,7 @@ module.exports = {
                 const response =
                     `✅ *Link shortened successfully!*\n\n` +
                     `*Original:*\n${result.originalUrl}\n\n` +
-                    `*Short Link:*\n${result.shortUrl}\n\n`;
+                    `*Short Link:*\n${result.shortUrl}`;
 
                 await yunwa.sendMessage(sender, {
                     text: response,
@@ -63,7 +63,7 @@ module.exports = {
 
                 const caption =
                     `✅ *Link shortened successfully!*\n\n` +
-                    `*Original:*\n${result.originalUrl}\n\n`;
+                    `*Original:*\n${result.originalUrl}`;
 
                 // Send QR code image with caption
                 await yunwa.sendMessage(sender, {
