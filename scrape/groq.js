@@ -30,6 +30,8 @@ function convertToWhatsAppFormat(text) {
         .replace(/\[(.*?)\]\((.*?)\)/g, "$1: $2")
         .replace(/^#+\s/gm, "")
         .replace(/\n{3,}/g, "\n\n")
+        .replace(/【[^】]*】/g, "")
+        .replace(/[†‡§¶]/g, "")
         .trim();
 }
 
