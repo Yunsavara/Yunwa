@@ -258,13 +258,11 @@ function calculateScore(question, isFollowUp, history) {
     let score = 0;
     const reasons = [];
 
-    // Follow-up penalty
     if (isFollowUp && history.length > 0) {
         score -= 3;
         reasons.push("Follow-up conversation (-3)");
     }
 
-    // Check strong search indicators
     if (
         STRONG_SEARCH_INDICATORS.keywords.some((k) => lowerQuestion.includes(k))
     ) {
@@ -274,19 +272,16 @@ function calculateScore(question, isFollowUp, history) {
         );
     }
 
-    // Check update indicators
     if (UPDATE_INDICATORS.keywords.some((k) => lowerQuestion.includes(k))) {
         score += UPDATE_INDICATORS.weight;
         reasons.push(`Update indicator (+${UPDATE_INDICATORS.weight})`);
     }
 
-    // Check comparison keywords
     if (COMPARISON.keywords.some((k) => lowerQuestion.includes(k))) {
         score += COMPARISON.weight;
         reasons.push(`Comparison request (+${COMPARISON.weight})`);
     }
 
-    // Check moderate search indicators
     if (
         MODERATE_SEARCH_INDICATORS.keywords.some((k) =>
             lowerQuestion.includes(k),
@@ -298,37 +293,31 @@ function calculateScore(question, isFollowUp, history) {
         );
     }
 
-    // Check statistics keywords
     if (STATISTICS.keywords.some((k) => lowerQuestion.includes(k))) {
         score += STATISTICS.weight;
         reasons.push(`Statistics query (+${STATISTICS.weight})`);
     }
 
-    // Check verification intent
     if (VERIFICATION.keywords.some((k) => lowerQuestion.includes(k))) {
         score += VERIFICATION.weight;
         reasons.push(`Verification request (+${VERIFICATION.weight})`);
     }
 
-    // Check search intent
     if (SEARCH_INTENT.keywords.some((k) => lowerQuestion.includes(k))) {
         score += SEARCH_INTENT.weight;
         reasons.push(`Search intent (+${SEARCH_INTENT.weight})`);
     }
 
-    // Check recent temporal patterns
     if (RECENT_TEMPORAL.patterns.some((p) => p.test(question))) {
         score += RECENT_TEMPORAL.weight;
         reasons.push(`Recent temporal (+${RECENT_TEMPORAL.weight})`);
     }
 
-    // Check historical temporal
     if (HISTORICAL_TEMPORAL.keywords.some((k) => lowerQuestion.includes(k))) {
         score += HISTORICAL_TEMPORAL.weight;
         reasons.push(`Historical reference (${HISTORICAL_TEMPORAL.weight})`);
     }
 
-    // Check current year patterns
     if (CURRENT_YEAR_PATTERNS.patterns.some((p) => p.test(lowerQuestion))) {
         score += CURRENT_YEAR_PATTERNS.weight;
         reasons.push(
@@ -336,43 +325,36 @@ function calculateScore(question, isFollowUp, history) {
         );
     }
 
-    // Check location patterns
     if (LOCATION_PATTERNS.patterns.some((p) => p.test(question))) {
         score += LOCATION_PATTERNS.weight;
         reasons.push(`Location-specific (+${LOCATION_PATTERNS.weight})`);
     }
 
-    // Check URL/domain presence
     if (URL_PATTERN.pattern.test(question)) {
         score += URL_PATTERN.weight;
         reasons.push(`URL detected (+${URL_PATTERN.weight})`);
     }
 
-    // Check strong conversational
     if (STRONG_CONVERSATIONAL.keywords.some((k) => lowerQuestion.includes(k))) {
         score += STRONG_CONVERSATIONAL.weight;
         reasons.push(`Conversational (${STRONG_CONVERSATIONAL.weight})`);
     }
 
-    // Check clarification
     if (CLARIFICATION.keywords.some((k) => lowerQuestion.includes(k))) {
         score += CLARIFICATION.weight;
         reasons.push(`Clarification request (${CLARIFICATION.weight})`);
     }
 
-    // Check general knowledge
     if (GENERAL_KNOWLEDGE.keywords.some((k) => lowerQuestion.includes(k))) {
         score += GENERAL_KNOWLEDGE.weight;
         reasons.push(`General knowledge (${GENERAL_KNOWLEDGE.weight})`);
     }
 
-    // Check subjective
     if (SUBJECTIVE.keywords.some((k) => lowerQuestion.includes(k))) {
         score += SUBJECTIVE.weight;
         reasons.push(`Subjective question (${SUBJECTIVE.weight})`);
     }
 
-    // Question length heuristic
     const wordCount = question.trim().split(/\s+/).length;
     if (wordCount <= 3) {
         score -= 1;
@@ -392,7 +374,6 @@ function calculateScore(question, isFollowUp, history) {
 async function askMiniLLM(question, history = []) {
     try {
         if (!process.env.GROQ_API_KEY) {
-            console.log("Router: No Groq API key, defaulting to search");
             return true;
         }
 
@@ -429,15 +410,8 @@ async function askMiniLLM(question, history = []) {
         const needsSearch =
             decision.includes("SEARCH") && !decision.includes("NO_SEARCH");
 
-        console.log(
-            `Router: Mini LLM decided - ${needsSearch ? "SEARCH" : "NO_SEARCH"}`,
-        );
         return needsSearch;
     } catch (error) {
-        console.error(
-            "Router: Mini LLM error, defaulting to search:",
-            error.message,
-        );
         return true;
     }
 }
@@ -448,23 +422,14 @@ async function askMiniLLM(question, history = []) {
 async function shouldSearch(question, isFollowUp = false, history = []) {
     const { score, reasons } = calculateScore(question, isFollowUp, history);
 
-    console.log(`Router: Heuristic score = ${score}`);
-    reasons.forEach((r) => console.log(`  - ${r}`));
-
-    // Clear decision: definitely search
     if (score >= 4) {
-        console.log("Router: HIGH score -> Web search required");
         return true;
     }
 
-    // Clear decision: definitely no search
     if (score <= -3) {
-        console.log("Router: LOW score -> No search needed");
         return false;
     }
 
-    // Ambiguous case: use mini LLM
-    console.log("Router: AMBIGUOUS score -> Consulting mini LLM...");
     return await askMiniLLM(question, history);
 }
 
