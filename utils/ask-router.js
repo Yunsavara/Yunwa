@@ -25,6 +25,39 @@ const STRONG_SEARCH_INDICATORS = {
     weight: 4,
 };
 
+// Update and change indicators
+const UPDATE_INDICATORS = {
+    keywords: [
+        "update",
+        "updated",
+        "new version",
+        "versi baru",
+        "terbaru",
+        "perubahan",
+        "changed",
+        "release",
+        "launch",
+        "diluncurkan",
+    ],
+    weight: 4,
+};
+
+// Comparison keywords
+const COMPARISON = {
+    keywords: [
+        "vs",
+        "versus",
+        "compare",
+        "comparison",
+        "bandingkan",
+        "difference between",
+        "perbedaan",
+        "better than",
+        "lebih baik",
+    ],
+    weight: 3,
+};
+
 // Medium priority: likely needs search
 const MODERATE_SEARCH_INDICATORS = {
     keywords: [
@@ -43,6 +76,40 @@ const MODERATE_SEARCH_INDICATORS = {
     weight: 2,
 };
 
+// Statistics and data keywords
+const STATISTICS = {
+    keywords: [
+        "how many",
+        "berapa banyak",
+        "statistics",
+        "statistik",
+        "data",
+        "percentage",
+        "persentase",
+        "rate",
+        "angka",
+        "jumlah",
+        "total",
+    ],
+    weight: 3,
+};
+
+// Verification intent
+const VERIFICATION = {
+    keywords: [
+        "is it true",
+        "benarkah",
+        "verify",
+        "fact check",
+        "hoax",
+        "real or fake",
+        "benar atau salah",
+        "confirm",
+        "konfirmasi",
+    ],
+    weight: 3,
+};
+
 // Search intent keywords
 const SEARCH_INTENT = {
     keywords: [
@@ -53,12 +120,42 @@ const SEARCH_INTENT = {
         "where",
         "dimana",
         "locate",
+        "lokasi",
     ],
     weight: 3,
 };
 
-// Year indicators (time-sensitive)
-const YEAR_PATTERNS = {
+// Recent temporal indicators (high urgency)
+const RECENT_TEMPORAL = {
+    patterns: [
+        /this (week|month|year)/i,
+        /(minggu|bulan|tahun) ini/i,
+        /hari ini/i,
+        /sekarang/i,
+        /saat ini/i,
+    ],
+    weight: 4,
+};
+
+// Historical temporal indicators (low urgency)
+const HISTORICAL_TEMPORAL = {
+    keywords: [
+        "last year",
+        "tahun lalu",
+        "2020",
+        "2021",
+        "2022",
+        "2023",
+        "in the past",
+        "dulu",
+        "historically",
+        "sejarah",
+    ],
+    weight: -1,
+};
+
+// Year indicators (current years)
+const CURRENT_YEAR_PATTERNS = {
     patterns: [/202[4-9]/, /203[0-9]/],
     weight: 3,
 };
@@ -74,6 +171,8 @@ const STRONG_CONVERSATIONAL = {
         "oke",
         "lanjutkan",
         "continue",
+        "more",
+        "lagi",
     ],
     weight: -4,
 };
@@ -91,6 +190,7 @@ const CLARIFICATION = {
         "bisa jelaskan",
         "more detail",
         "lebih detail",
+        "elaborate",
     ],
     weight: -3,
 };
@@ -107,11 +207,12 @@ const GENERAL_KNOWLEDGE = {
         "why",
         "mengapa",
         "kenapa",
-        "history",
+        "history of",
         "sejarah",
         "definition",
         "definisi",
         "meaning",
+        "arti",
     ],
     weight: -2,
 };
@@ -126,8 +227,27 @@ const SUBJECTIVE = {
         "what do you think",
         "should i",
         "haruskah",
+        "recommend",
+        "rekomendasikan",
     ],
     weight: -2,
+};
+
+// Location-specific patterns
+const LOCATION_PATTERNS = {
+    patterns: [
+        /in [A-Z][a-z]+/,
+        /di [A-Z][a-z]+/,
+        /\b(jakarta|surabaya|bandung|medan|semarang|bali)\b/i,
+    ],
+    weight: 2,
+};
+
+// URL/Domain detection
+const URL_PATTERN = {
+    pattern:
+        /(?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b/,
+    weight: 2,
 };
 
 /**
@@ -154,6 +274,18 @@ function calculateScore(question, isFollowUp, history) {
         );
     }
 
+    // Check update indicators
+    if (UPDATE_INDICATORS.keywords.some((k) => lowerQuestion.includes(k))) {
+        score += UPDATE_INDICATORS.weight;
+        reasons.push(`Update indicator (+${UPDATE_INDICATORS.weight})`);
+    }
+
+    // Check comparison keywords
+    if (COMPARISON.keywords.some((k) => lowerQuestion.includes(k))) {
+        score += COMPARISON.weight;
+        reasons.push(`Comparison request (+${COMPARISON.weight})`);
+    }
+
     // Check moderate search indicators
     if (
         MODERATE_SEARCH_INDICATORS.keywords.some((k) =>
@@ -166,16 +298,54 @@ function calculateScore(question, isFollowUp, history) {
         );
     }
 
+    // Check statistics keywords
+    if (STATISTICS.keywords.some((k) => lowerQuestion.includes(k))) {
+        score += STATISTICS.weight;
+        reasons.push(`Statistics query (+${STATISTICS.weight})`);
+    }
+
+    // Check verification intent
+    if (VERIFICATION.keywords.some((k) => lowerQuestion.includes(k))) {
+        score += VERIFICATION.weight;
+        reasons.push(`Verification request (+${VERIFICATION.weight})`);
+    }
+
     // Check search intent
     if (SEARCH_INTENT.keywords.some((k) => lowerQuestion.includes(k))) {
         score += SEARCH_INTENT.weight;
         reasons.push(`Search intent (+${SEARCH_INTENT.weight})`);
     }
 
-    // Check year patterns
-    if (YEAR_PATTERNS.patterns.some((p) => p.test(lowerQuestion))) {
-        score += YEAR_PATTERNS.weight;
-        reasons.push(`Year mentioned (+${YEAR_PATTERNS.weight})`);
+    // Check recent temporal patterns
+    if (RECENT_TEMPORAL.patterns.some((p) => p.test(question))) {
+        score += RECENT_TEMPORAL.weight;
+        reasons.push(`Recent temporal (+${RECENT_TEMPORAL.weight})`);
+    }
+
+    // Check historical temporal
+    if (HISTORICAL_TEMPORAL.keywords.some((k) => lowerQuestion.includes(k))) {
+        score += HISTORICAL_TEMPORAL.weight;
+        reasons.push(`Historical reference (${HISTORICAL_TEMPORAL.weight})`);
+    }
+
+    // Check current year patterns
+    if (CURRENT_YEAR_PATTERNS.patterns.some((p) => p.test(lowerQuestion))) {
+        score += CURRENT_YEAR_PATTERNS.weight;
+        reasons.push(
+            `Current year mentioned (+${CURRENT_YEAR_PATTERNS.weight})`,
+        );
+    }
+
+    // Check location patterns
+    if (LOCATION_PATTERNS.patterns.some((p) => p.test(question))) {
+        score += LOCATION_PATTERNS.weight;
+        reasons.push(`Location-specific (+${LOCATION_PATTERNS.weight})`);
+    }
+
+    // Check URL/domain presence
+    if (URL_PATTERN.pattern.test(question)) {
+        score += URL_PATTERN.weight;
+        reasons.push(`URL detected (+${URL_PATTERN.weight})`);
     }
 
     // Check strong conversational
@@ -202,10 +372,14 @@ function calculateScore(question, isFollowUp, history) {
         reasons.push(`Subjective question (${SUBJECTIVE.weight})`);
     }
 
-    // Question length bonus (very short questions usually conversational)
-    if (question.trim().split(/\s+/).length <= 3) {
+    // Question length heuristic
+    const wordCount = question.trim().split(/\s+/).length;
+    if (wordCount <= 3) {
         score -= 1;
         reasons.push("Short question (-1)");
+    } else if (wordCount >= 15) {
+        score += 1;
+        reasons.push("Complex question (+1)");
     }
 
     return { score, reasons };
@@ -230,8 +404,8 @@ async function askMiniLLM(question, history = []) {
                 content:
                     "You are a router that decides if a question needs real-time web search. " +
                     "Answer ONLY with: SEARCH or NO_SEARCH\n\n" +
-                    "SEARCH if: time-sensitive, current events, specific data, prices, news\n" +
-                    "NO_SEARCH if: conversational, general knowledge, opinion, clarification",
+                    "SEARCH if: time-sensitive, current events, specific data, prices, news, comparisons, verification\n" +
+                    "NO_SEARCH if: conversational, general knowledge, opinion, clarification, explanation",
             },
             ...history.slice(-4).map((h) => ({
                 role: h.role,
