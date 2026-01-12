@@ -14,8 +14,8 @@ async function generateQuote(topic = null) {
     const groq = new Groq({ apiKey });
 
     const prompt = topic
-        ? `Give me a real, famous quote about "${topic}". The quote must be from a well-known person (philosopher, scientist, author, leader, etc). Do not invent quotes or authors. Respond in the same language as the topic provided. Format: the quote text (without quotation marks), then on a new line: — Author Name`
-        : `Give me a real, famous inspirational quote. The quote must be from a well-known person (philosopher, scientist, author, leader, etc). Do not invent quotes or authors. Format: the quote text (without quotation marks), then on a new line: — Author Name`;
+        ? `Give me a real, famous quote related to "${topic}". If there's no direct quote about this specific topic, find a quote about the core themes or values associated with it. The quote must be from a well-known person (philosopher, scientist, author, leader, etc). Do not invent quotes or authors. Respond in the same language as the topic provided. Format: the quote text (without quotation marks), then on a new line: — Author Name`
+        : `Give me a real, famous inspirational quote...`;
 
     try {
         const chatCompletion = await groq.chat.completions.create({
