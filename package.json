@@ -7,7 +7,9 @@
     "type": "commonjs",
     "main": "index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "node index.js",
+        "reconfig": "node reconfig.js"
     },
     "dependencies": {
         "@andresaya/edge-tts": "^1.8.0",
