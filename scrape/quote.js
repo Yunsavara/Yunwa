@@ -13,9 +13,20 @@ async function generateQuote(topic = null) {
 
     const groq = new Groq({ apiKey });
 
-    const prompt = topic
-        ? `Give me a real, famous quote related to "${topic}". If there's no direct quote about this specific topic, find a quote about the core themes or values associated with it. The quote must be from a well-known person (philosopher, scientist, author, leader, etc). Do not invent quotes or authors. Respond in the same language as the topic provided. Format: the quote text (without quotation marks), then on a new line: — Author Name`
-        : `Give me a real, famous inspirational quote...`;
+    const prompt = `
+    If "${topic}" refers to a fictional character, anime, manga, movie, or game,
+    give a famous quote from that fictional character.
+
+    If it refers to a general concept or real-world topic,
+    give a real, famous quote from a well-known real person.
+
+    Do not invent quotes or authors.
+    Respond in the same language as the topic.
+
+    Format:
+    Quote text
+    — Author or Character (Source if fictional)
+    `;
 
     try {
         const chatCompletion = await groq.chat.completions.create({
