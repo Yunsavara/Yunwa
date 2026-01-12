@@ -23,8 +23,8 @@ module.exports = {
             if (!query) {
                 await yunwa.sendMessage(sender, {
                     text:
-                        "❌ *Cara pakai:* !pin <kata kunci>\n\n" +
-                        "*Contoh:*\n" +
+                        "❌ *How to use:* !pin <keyword>\n\n" +
+                        "*Examples:*\n" +
                         "• !pin aesthetic anime\n" +
                         "• !pin nmixx kim jiwoo\n",
                 });
@@ -50,7 +50,7 @@ module.exports = {
         } catch (error) {
             console.error("Error in pin command:", error);
             await yunwa.sendMessage(sender, {
-                text: `❌ ${error.message || "Terjadi error saat mencari gambar Pinterest"}`,
+                text: `❌ ${error.message || "Error occurred while searching Pinterest images"}`,
             });
         }
     },

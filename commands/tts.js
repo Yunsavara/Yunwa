@@ -55,15 +55,15 @@ async function convertToKatakana(text) {
                 {
                     role: "system",
                     content:
-                        "Kamu adalah expert dalam bahasa Jepang. " +
-                        "Tugas: Konversi text ke dalam KATAKANA Jepang yang tepat. " +
-                        "Jika input sudah dalam Jepang (Hiragana/Katakana/Kanji), biarkan saja. " +
-                        "Jika input bahasa lain (Indonesia/English), konversi fonetiknya ke Katakana. " +
-                        "HANYA output Katakana/Hiragana/Kanji, jangan ada penjelasan lain.",
+                        "You are an expert in Japanese language. " +
+                        "Task: Convert text into proper Japanese KATAKANA. " +
+                        "If input is already in Japanese (Hiragana/Katakana/Kanji), keep it as is. " +
+                        "If input is in other languages (Indonesian/English), convert phonetically to Katakana. " +
+                        "ONLY output Katakana/Hiragana/Kanji, no other explanation.",
                 },
                 {
                     role: "user",
-                    content: `Konversi text ini ke Katakana Jepang yang tepat: "${text}"`,
+                    content: `Convert this text to proper Japanese Katakana: "${text}"`,
                 },
             ],
             model: "openai/gpt-oss-120b",
@@ -100,21 +100,21 @@ module.exports = {
                 await yunwa.sendMessage(sender, {
                     text:
                         "🔊 *Text to Speech*\n\n" +
-                        "Cara pakai:\n" +
+                        "How to use:\n" +
                         "!tts [voice] [text]\n\n" +
                         "Voice codes:\n" +
-                        "• *idp* - Indonesia Perempuan\n" +
-                        "• *idl* - Indonesia Laki-laki\n" +
+                        "• *idp* - Indonesian Female\n" +
+                        "• *idl* - Indonesian Male\n" +
                         "• *enp* - English Female\n" +
                         "• *enl* - English Male\n" +
                         "• *jpp* - Japanese Female \n" +
                         "• *jpl* - Japanese Male \n\n" +
-                        "Contoh:\n" +
+                        "Examples:\n" +
                         "• !tts idp Halo, apa kabar?\n" +
                         "• !tts enp Hello world!\n" +
                         "• !tts jpp Ohayou gozaimasu!\n" +
                         "• !tts jpl Ore wa Naruto da!\n\n" +
-                        "*Note:* Suara Jepang akan auto-convert ke Katakana",
+                        "*Note:* Japanese voice will auto-convert to Katakana",
                 });
                 return;
             }
@@ -141,7 +141,7 @@ module.exports = {
             // Validate text
             if (!textToSpeak.trim()) {
                 await yunwa.sendMessage(sender, {
-                    text: "❌ Text tidak boleh kosong!\n\nContoh: !tts idp Halo dunia",
+                    text: "❌ Text cannot be empty!\n\nExample: !tts enp Hello world",
                 });
                 return;
             }
@@ -211,8 +211,8 @@ module.exports = {
             await yunwa.sendMessage(sender, {
                 text:
                     "❌ Error: " +
-                    (error.message || "Gagal membuat voice") +
-                    "\n\nCoba lagi atau gunakan voice lain.",
+                    (error.message || "Failed to create voice") +
+                    "\n\nPlease try again or use another voice.",
             });
         }
     },

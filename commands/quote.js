@@ -28,7 +28,7 @@ module.exports = {
         } catch (error) {
             console.error("Error in quote command:", error);
             await yunwa.sendMessage(sender, {
-                text: `❌ ${error.message || "Terjadi error saat mengambil quote anime"}`,
+                text: `❌ ${error.message || "Error occurred while fetching anime quote"}`,
             });
         }
     },

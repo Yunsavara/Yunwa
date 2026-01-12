@@ -16,10 +16,10 @@ async function searchLyrics(query) {
         const results = response.data;
 
         if (!results || results.length === 0) {
-            throw new Error("Lirik tidak ditemukan");
+            throw new Error("Lyrics not found");
         }
 
-        // Ambil hasil pertama
+        // Take first result
         const firstResult = results[0];
 
         return {
@@ -32,11 +32,11 @@ async function searchLyrics(query) {
             syncedLyrics: firstResult.syncedLyrics,
         };
     } catch (error) {
-        if (error.message === "Lirik tidak ditemukan") {
+        if (error.message === "Lyrics not found") {
             throw error;
         }
         console.error("Error searching lyrics:", error);
-        throw new Error("Gagal mencari lirik dari LRCLIB");
+        throw new Error("Failed to search lyrics from LRCLIB");
     }
 }
 

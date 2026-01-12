@@ -12,7 +12,7 @@ module.exports = {
 
     async execute(yunwa, msg, sender, pushname) {
         try {
-            // Kirim typing indicator
+            // Send typing indicator
             await yunwa.sendPresenceUpdate("composing", sender);
 
             // Get random waifu
@@ -26,11 +26,11 @@ module.exports = {
 
             // Caption
             const caption =
-                `Karbit *${pushname}* ini waifu kamu!\n\n` +
+                `Hey *${pushname}*, here's your waifu!\n\n` +
                 `Artist: ${waifu.artist}\n` +
                 (waifu.source ? `Source: ${waifu.source}\n` : "");
 
-            // Send image dengan caption
+            // Send image with caption
             await yunwa.sendMessage(sender, {
                 image: imageBuffer,
                 caption: caption,
@@ -40,7 +40,7 @@ module.exports = {
         } catch (error) {
             console.error("Error in waifu command:", error);
             await yunwa.sendMessage(sender, {
-                text: `❌ ${error.message || "Terjadi error saat mengambil waifu"}`,
+                text: `❌ ${error.message || "Error occurred while fetching waifu"}`,
             });
         }
     },

@@ -135,7 +135,7 @@ function setupMessageHandler(yunwa) {
                         error,
                     );
                     await yunwa.sendMessage(sender, {
-                        text: "Terjadi error saat menjalankan command!",
+                        text: "Error occurred while executing command!",
                     });
                 }
             } else {

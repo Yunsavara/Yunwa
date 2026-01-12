@@ -31,36 +31,34 @@ function checkEnvExists() {
  */
 async function runSetupWizard() {
     console.log(chalk.bgCyan.black("\n Yunwa Bot - First Time Setup \n"));
-    console.log(
-        chalk.yellow("Bot ini memerlukan 2 API Keys (100% GRATIS!):\n"),
-    );
+    console.log(chalk.yellow("This bot requires 2 API Keys (100% FREE!):\n"));
 
     console.log(chalk.green("1. Groq API Key"));
-    console.log(chalk.gray("   → Daftar di: https://console.groq.com/keys"));
-    console.log(chalk.gray("   → Klik 'Create API Key', copy token\n"));
+    console.log(chalk.gray("   → Sign up at: https://console.groq.com/keys"));
+    console.log(chalk.gray("   → Click 'Create API Key', copy token\n"));
 
-    console.log(chalk.green("2. Tavily API Key (untuk web search)"));
-    console.log(chalk.gray("   → Daftar di: https://tavily.com/"));
-    console.log(chalk.gray("   → Gratis 1000 searches/bulan\n"));
+    console.log(chalk.green("2. Tavily API Key (for web search)"));
+    console.log(chalk.gray("   → Sign up at: https://tavily.com/"));
+    console.log(chalk.gray("   → Free 1000 searches/month\n"));
 
     console.log(chalk.green("3. Resita API Key"));
-    console.log(chalk.gray("   → Daftar di: https://api.ferdev.my.id/docs\n"));
+    console.log(chalk.gray("   → Sign up at: https://api.ferdev.my.id/docs\n"));
 
-    console.log(chalk.cyan("Mari setup API keys nya!\n"));
+    console.log(chalk.cyan("Let's setup your API keys!\n"));
 
     // Get Groq API Key
     const groqKey = await question(
-        chalk.yellow("Masukkan Groq API Key (atau ketik 'skip'): "),
+        chalk.yellow("Enter Groq API Key (or type 'skip'): "),
     );
 
     // Get Tavily API Key
     const tavilyKey = await question(
-        chalk.yellow("Masukkan Tavily API Key (atau ketik 'skip'): "),
+        chalk.yellow("Enter Tavily API Key (or type 'skip'): "),
     );
 
     // Get Resita API Key
     const resitaKey = await question(
-        chalk.yellow("Masukkan Resita API Key (atau ketik 'skip'): "),
+        chalk.yellow("Enter Resita API Key (or type 'skip'): "),
     );
 
     // Create .env file
@@ -86,7 +84,7 @@ async function runSetupWizard() {
 
     fs.writeFileSync(ENV_PATH, envContent);
 
-    console.log(chalk.green("\nSetup selesai!"));
+    console.log(chalk.green("\nSetup completed!"));
 
     if (
         groqKey.toLowerCase() === "skip" ||
@@ -94,13 +92,11 @@ async function runSetupWizard() {
         resitaKey.toLowerCase() === "skip"
     ) {
         console.log(
-            chalk.yellow(
-                "\n⚠️  Beberapa fitur tidak akan bekerja tanpa API key.",
-            ),
+            chalk.yellow("\n⚠️  Some features won't work without API keys."),
         );
     }
 
-    console.log(chalk.cyan("Bot akan mulai dalam 3 detik...\n"));
+    console.log(chalk.cyan("Bot will start in 3 seconds...\n"));
     await new Promise((resolve) => setTimeout(resolve, 3000));
 }
 

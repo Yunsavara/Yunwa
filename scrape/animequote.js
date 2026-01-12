@@ -7,9 +7,7 @@ const axios = require("axios");
 async function getRandomAnimeQuote() {
     const apiKey = process.env.RESITA_API_KEY;
     if (!apiKey) {
-        throw new Error(
-            "RESITA_API_KEY belum di-setup! Jalankan setup wizard.",
-        );
+        throw new Error("RESITA_API_KEY not configured! Run setup wizard.");
     }
 
     const url = "https://api.ferdev.my.id/random/animequote";
@@ -23,10 +21,10 @@ async function getRandomAnimeQuote() {
         !Array.isArray(data.result) ||
         data.result.length === 0
     ) {
-        throw new Error("Gagal mengambil quote anime.");
+        throw new Error("Failed to fetch anime quote.");
     }
 
-    // Ambil satu quote secara random
+    // Pick one quote randomly
     const randomIndex = Math.floor(Math.random() * data.result.length);
     return data.result[randomIndex];
 }

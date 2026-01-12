@@ -3,7 +3,7 @@ const axios = require("axios");
 let lastSearchSources = [];
 
 /**
- * Search web menggunakan Tavily API
+ * Search web using Tavily API
  * @param {string} query - Search query
  * @returns {Promise<string>} Search results with numbered references
  */
@@ -12,7 +12,7 @@ async function searchWeb(query) {
         const apiKey = process.env.TAVILY_API_KEY;
 
         if (!apiKey) {
-            throw new Error("TAVILY_API_KEY tidak ditemukan di .env");
+            throw new Error("TAVILY_API_KEY not found in .env");
         }
 
         const response = await axios.post("https://api.tavily.com/search", {
@@ -23,21 +23,21 @@ async function searchWeb(query) {
             max_results: 5,
         });
 
-        // Format hasil search dengan numbered references
+        // Format search results with numbered references
         const results = response.data;
         let formattedResults = "";
 
-        // Reset dan simpan sources
+        // Reset and save sources
         lastSearchSources = [];
 
         if (results.answer) {
-            formattedResults += `Ringkasan: ${results.answer}\n\n`;
+            formattedResults += `Summary: ${results.answer}\n\n`;
         }
 
         if (results.results && results.results.length > 0) {
-            formattedResults += "Sumber Informasi:\n\n";
+            formattedResults += "Information Sources:\n\n";
             results.results.forEach((result, index) => {
-                // Simpan untuk referensi
+                // Save for reference
                 lastSearchSources.push({
                     title: result.title,
                     url: result.url,
@@ -52,10 +52,10 @@ async function searchWeb(query) {
             });
         }
 
-        return formattedResults || "Tidak ada hasil ditemukan.";
+        return formattedResults || "No results found.";
     } catch (error) {
         console.error("Error searching web:", error);
-        throw new Error("Gagal melakukan pencarian web");
+        throw new Error("Failed to perform web search");
     }
 }
 

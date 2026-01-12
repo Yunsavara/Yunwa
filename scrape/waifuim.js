@@ -16,10 +16,10 @@ async function getRandomWaifu() {
         const data = response.data;
 
         if (!data.images || data.images.length === 0) {
-            throw new Error("Tidak ada waifu ditemukan");
+            throw new Error("No waifu found");
         }
 
-        // Ambil image pertama (random dari API)
+        // Take first image (random from API)
         const image = data.images[0];
 
         return {
@@ -34,7 +34,7 @@ async function getRandomWaifu() {
         };
     } catch (error) {
         console.error("Error fetching waifu:", error);
-        throw new Error("Gagal mengambil waifu dari API");
+        throw new Error("Failed to fetch waifu from API");
     }
 }
 

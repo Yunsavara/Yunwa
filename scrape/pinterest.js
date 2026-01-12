@@ -8,9 +8,7 @@ const axios = require("axios");
 async function searchPinterest(query) {
     const apiKey = process.env.RESITA_API_KEY;
     if (!apiKey) {
-        throw new Error(
-            "RESITA_API_KEY belum di-setup! Jalankan setup wizard.",
-        );
+        throw new Error("RESITA_API_KEY not configured! Run setup wizard.");
     }
 
     const url = "https://api.ferdev.my.id/search/pinterest";
@@ -27,9 +25,7 @@ async function searchPinterest(query) {
         !Array.isArray(data.result) ||
         data.result.length === 0
     ) {
-        throw new Error(
-            "Gagal menemukan gambar Pinterest untuk query tersebut.",
-        );
+        throw new Error("Failed to find Pinterest images for that query.");
     }
 
     // Pick random image

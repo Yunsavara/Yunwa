@@ -44,9 +44,9 @@ async function askGroq(question) {
                 {
                     role: "system",
                     content:
-                        "Kamu asisten AI yang helpful dan ramah. " +
-                        "Jawab dengan jelas dan padat. " +
-                        "Gunakan bahasa Indonesia yang natural.",
+                        "You are a helpful and friendly AI assistant. " +
+                        "Answer clearly and concisely. " +
+                        "Use natural language.",
                 },
                 {
                     role: "user",
@@ -60,7 +60,7 @@ async function askGroq(question) {
 
         const response =
             chatCompletion.choices[0]?.message?.content ||
-            "Maaf, tidak ada respon.";
+            "Sorry, no response available.";
 
         return convertToWhatsAppFormat(response);
     } catch (error) {
@@ -68,7 +68,7 @@ async function askGroq(question) {
         if (error.message.includes("GROQ_API_KEY")) {
             throw error;
         }
-        throw new Error("Gagal mendapatkan respon dari Groq AI");
+        throw new Error("Failed to get response from Groq AI");
     }
 }
 
@@ -80,14 +80,14 @@ async function checkIfNeedsWebSearch(question, history = []) {
             {
                 role: "system",
                 content:
-                    "Jawab YES jika pertanyaan butuh data baru dari web. " +
-                    "Jawab NO jika cukup dari history. " +
-                    "Jawab HANYA: YES atau NO",
+                    "Answer YES if the question needs new data from the web. " +
+                    "Answer NO if history is sufficient. " +
+                    "Answer ONLY: YES or NO",
             },
             ...history.slice(-6),
             {
                 role: "user",
-                content: `Pertanyaan: "${question}"\nButuh web search?`,
+                content: `Question: "${question}"\nNeed web search?`,
             },
         ];
 
@@ -119,7 +119,7 @@ async function askGroqWithContext(question, history = []) {
         const groq = getGroqClient();
         const { searchWeb, getLastSearchSources } = require("./tavily");
 
-        // Selalu lakukan web search
+        // Always perform web search
         console.log("Searching web for context...");
         const searchResults = await searchWeb(question);
 
@@ -129,14 +129,14 @@ async function askGroqWithContext(question, history = []) {
             {
                 role: "system",
                 content:
-                    "Kamu asisten AI yang menjawab berdasarkan konteks history dan web search. " +
-                    "Jawab jelas dan padat dalam bahasa Indonesia. " +
-                    "Gunakan konteks history jika ada. " +
-                    "Cite sumber dengan [1], [2], [3] saat mengutip informasi dari web. " +
-                    "Fokus pada jawaban, sumber akan ditambahkan otomatis. " +
-                    "Gunakan *bold* untuk penekanan penting saja.",
+                    "You are an AI assistant that answers based on conversation history and web search results. " +
+                    "Answer clearly and concisely. " +
+                    "Use conversation history if available. " +
+                    "Cite sources with [1], [2], [3] when quoting information from the web. " +
+                    "Focus on the answer, sources will be added automatically. " +
+                    "Use *bold* for important emphasis only.",
             },
-            ...history.slice(-6), // Ambil 6 message terakhir dari history
+            ...history.slice(-6), // Take last 6 messages from history
             {
                 role: "user",
                 content: `${question}\n\nWeb Search Results:\n${searchResults}`,
@@ -152,12 +152,12 @@ async function askGroqWithContext(question, history = []) {
 
         let response =
             chatCompletion.choices[0]?.message?.content ||
-            "Maaf, tidak ada respon.";
+            "Sorry, no response available.";
 
-        // Append sumber dari Tavily
+        // Append sources from Tavily
         const sources = getLastSearchSources();
         if (sources && sources.length > 0) {
-            response += "\n─────────────\n*Sumber:*\n";
+            response += "\n\n─────────────\n*Sources:*\n";
             sources.forEach((source, index) => {
                 response += `[${index + 1}] ${source.title}\n${source.url}\n\n`;
             });
@@ -172,7 +172,7 @@ async function askGroqWithContext(question, history = []) {
         ) {
             throw error;
         }
-        throw new Error("Gagal mendapatkan respon dari Groq AI");
+        throw new Error("Failed to get response from Groq AI");
     }
 }
 
@@ -190,11 +190,11 @@ async function askGroqWithSearch(question, history = []) {
             {
                 role: "system",
                 content:
-                    "Kamu asisten AI yang menjawab berdasarkan web search. " +
-                    "Jawab jelas dan padat. Cite sumber dengan [1], [2]. " +
-                    "Tampilkan daftar sumber di akhir.",
+                    "You are an AI assistant that answers based on web search results. " +
+                    "Answer clearly and concisely. Cite sources with [1], [2]. " +
+                    "Display source list at the end.",
             },
-            ...history.slice(-4), // Ambil 4 message terakhir
+            ...history.slice(-4), // Take last 4 messages
             {
                 role: "user",
                 content: `${question}\n\nWeb Search:\n${searchResults}`,
@@ -210,7 +210,7 @@ async function askGroqWithSearch(question, history = []) {
 
         const response =
             chatCompletion.choices[0]?.message?.content ||
-            "Maaf, tidak ada respon.";
+            "Sorry, no response available.";
 
         return convertToWhatsAppFormat(response);
     } catch (error) {
@@ -221,7 +221,7 @@ async function askGroqWithSearch(question, history = []) {
         ) {
             throw error;
         }
-        throw new Error("Gagal mendapatkan respon dari AI");
+        throw new Error("Failed to get response from AI");
     }
 }
 

@@ -7,7 +7,7 @@ const {
 
 module.exports = {
     name: "ask",
-    description: "Ask AI with real-time web search (support follow-up)",
+    description: "Ask AI with real-time web search",
     category: "ai",
 
     async execute(yunwa, msg, sender, pushname) {
@@ -36,15 +36,15 @@ module.exports = {
             if (!question) {
                 await yunwa.sendMessage(sender, {
                     text:
-                        "Cara pakai:\n\n" +
-                        "1. Ask baru:\n" +
-                        "!ask <pertanyaan>\n\n" +
+                        "How to use:\n\n" +
+                        "1. New question:\n" +
+                        "!ask <question>\n\n" +
                         "2. Follow-up:\n" +
-                        "Reply pesan bot dengan pertanyaan lanjutan\n\n" +
-                        "Contoh:\n" +
-                        "- !ask siapa itu Castorice?\n" +
-                        "- (reply) contohnya gimana?\n" +
-                        "- (reply) benarkah itu?",
+                        "Reply to bot message with follow-up question\n\n" +
+                        "Examples:\n" +
+                        "- !ask who is Castorice?\n" +
+                        "- (reply) can you give me an example?\n" +
+                        "- (reply) is that true?",
                 });
                 return;
             }
@@ -52,11 +52,11 @@ module.exports = {
             if (!process.env.GROQ_API_KEY || !process.env.TAVILY_API_KEY) {
                 await yunwa.sendMessage(sender, {
                     text:
-                        "API Keys belum di-setup!\n\n" +
-                        "API Keys yang dibutuhkan:\n" +
+                        "API Keys not configured!\n\n" +
+                        "Required API Keys:\n" +
                         "- Groq: https://console.groq.com/keys\n" +
                         "- Tavily: https://tavily.com/\n\n" +
-                        "Restart bot untuk menjalankan setup wizard.",
+                        "Restart bot to run setup wizard.",
                 });
                 return;
             }
@@ -66,7 +66,7 @@ module.exports = {
             const history = getHistory(sender);
             const { askGroqWithContext } = require("../scrape/groq");
 
-            // Selalu gunakan askGroqWithContext (search + history)
+            // Always use askGroqWithContext (search + history)
             const response = await askGroqWithContext(question, history);
 
             addToHistory(sender, "user", question);
@@ -84,7 +84,7 @@ module.exports = {
         } catch (error) {
             console.error("Error in ask command:", error);
             await yunwa.sendMessage(sender, {
-                text: error.message || "Terjadi error saat menghubungi AI",
+                text: error.message || "Error occurred while contacting AI",
             });
         }
     },

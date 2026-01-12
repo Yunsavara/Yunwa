@@ -15,14 +15,14 @@ module.exports = {
                 msg.message.extendedTextMessage?.text ||
                 "";
 
-            // Extract query dari command
+            // Extract query from command
             const query = body.slice(6).trim(); // Remove "!lyric"
 
             if (!query) {
                 await yunwa.sendMessage(sender, {
                     text:
-                        "❌ *Cara pakai:* !lyric <nama lagu>\n\n" +
-                        "*Contoh:*\n" +
+                        "❌ *How to use:* !lyric <song name>\n\n" +
+                        "*Examples:*\n" +
                         "• !lyric focus hearts2hearts\n" +
                         "• !lyric perfect ed sheeran\n" +
                         "• !lyric bohemian rhapsody",
@@ -30,7 +30,7 @@ module.exports = {
                 return;
             }
 
-            // Kirim typing indicator
+            // Send typing indicator
             await yunwa.sendPresenceUpdate("composing", sender);
 
             // Search lyrics
@@ -39,7 +39,7 @@ module.exports = {
             // Check if plainLyrics exist
             if (!result.plainLyrics || result.plainLyrics.trim() === "") {
                 await yunwa.sendMessage(sender, {
-                    text: `❌ Lirik tidak tersedia untuk lagu ini.\n\n📝 *${result.trackName}*\n👤 ${result.artistName}`,
+                    text: `❌ Lyrics not available for this song.\n\n📝 *${result.trackName}*\n👤 ${result.artistName}`,
                 });
                 return;
             }
@@ -64,7 +64,7 @@ module.exports = {
         } catch (error) {
             console.error("Error in lyric command:", error);
             await yunwa.sendMessage(sender, {
-                text: `❌ ${error.message || "Terjadi error saat mencari lirik"}`,
+                text: `❌ ${error.message || "Error occurred while searching lyrics"}`,
             });
         }
     },
