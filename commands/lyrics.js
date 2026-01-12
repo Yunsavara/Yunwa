@@ -1,11 +1,11 @@
 const { searchLyrics } = require("../scrape/lrclib");
 
 /**
- * Lyric command - Search and display song lyrics
- * Usage: !lyric <song name>
+ * Lyrics command - Search and display song lyrics
+ * Usage: !lyrics <song name>
  */
 module.exports = {
-    name: "lyric",
+    name: "lyrics",
     description: "Search song lyrics from LRCLIB",
 
     async execute(yunwa, msg, sender, pushname) {
@@ -16,16 +16,16 @@ module.exports = {
                 "";
 
             // Extract query from command
-            const query = body.slice(6).trim(); // Remove "!lyric"
+            const query = body.slice(7).trim(); // Remove "!lyrics"
 
             if (!query) {
                 await yunwa.sendMessage(sender, {
                     text:
-                        "❌ *How to use:* !lyric <song name>\n\n" +
+                        "❌ *How to use:* !lyrics <song name>\n\n" +
                         "*Examples:*\n" +
-                        "• !lyric focus hearts2hearts\n" +
-                        "• !lyric perfect ed sheeran\n" +
-                        "• !lyric bohemian rhapsody",
+                        "• !lyrics focus hearts2hearts\n" +
+                        "• !lyrics perfect ed sheeran\n" +
+                        "• !lyrics bohemian rhapsody",
                 });
                 return;
             }
@@ -62,7 +62,7 @@ module.exports = {
 
             await yunwa.sendPresenceUpdate("paused", sender);
         } catch (error) {
-            console.error("Error in lyric command:", error);
+            console.error("Error in lyrics command:", error);
             await yunwa.sendMessage(sender, {
                 text: `❌ ${error.message || "Error occurred while searching lyrics"}`,
             });
