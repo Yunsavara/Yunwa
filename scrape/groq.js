@@ -115,19 +115,27 @@ async function checkIfNeedsWebSearch(question, history = []) {
 async function askGroqWithContext(question, history = []) {
     try {
         const groq = getGroqClient();
+        const { searchWeb } = require("./tavily");
+
+        // Selalu lakukan web search
+        console.log("Searching web for context...");
+        const searchResults = await searchWeb(question);
+
+        console.log("Processing with AI using history + search...");
 
         const messages = [
             {
                 role: "system",
                 content:
-                    "Kamu asisten AI yang menjawab dengan jelas dan padat. " +
-                    "Fokus pada pertanyaan user. Gunakan konteks sebelumnya jika relevan. " +
+                    "Kamu asisten AI yang menjawab berdasarkan konteks history dan web search. " +
+                    "Jawab jelas dan padat. Cite sumber dengan [1], [2] jika relevan. " +
+                    "Gunakan konteks history jika ada. " +
                     "Jawab dalam bahasa Indonesia. Gunakan *bold* untuk penekanan penting saja.",
             },
-            ...history.slice(-6), // Batasi history, ambil 6 message terakhir aja
+            ...history.slice(-6), // Ambil 6 message terakhir dari history
             {
                 role: "user",
-                content: question,
+                content: `${question}\n\nWeb Search Results:\n${searchResults}`,
             },
         ];
 
@@ -135,7 +143,7 @@ async function askGroqWithContext(question, history = []) {
             messages: messages,
             model: "openai/gpt-oss-120b",
             temperature: 0.3,
-            max_tokens: 1500,
+            max_tokens: 2048,
         });
 
         const response =
@@ -145,6 +153,12 @@ async function askGroqWithContext(question, history = []) {
         return convertToWhatsAppFormat(response);
     } catch (error) {
         console.error("Error asking Groq with context:", error);
+        if (
+            error.message.includes("GROQ_API_KEY") ||
+            error.message.includes("TAVILY_API_KEY")
+        ) {
+            throw error;
+        }
         throw new Error("Gagal mendapatkan respon dari Groq AI");
     }
 }

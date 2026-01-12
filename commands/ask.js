@@ -64,34 +64,10 @@ module.exports = {
             await yunwa.sendPresenceUpdate("composing", sender);
 
             const history = getHistory(sender);
+            const { askGroqWithContext } = require("../scrape/groq");
 
-            const {
-                askGroqWithSearch,
-                askGroqWithContext,
-                checkIfNeedsWebSearch,
-            } = require("../scrape/groq");
-
-            let response;
-
-            if (isFollowUp && history.length > 0) {
-                // AI self-assess: Does it need web search?
-                console.log("AI checking if web search needed...");
-                const needsSearch = await checkIfNeedsWebSearch(
-                    question,
-                    history,
-                );
-
-                if (needsSearch) {
-                    console.log("AI decided: NEED web search");
-                    response = await askGroqWithSearch(question, history);
-                } else {
-                    console.log("AI decided: Context is enough");
-                    response = await askGroqWithContext(question, history);
-                }
-            } else {
-                // New question: Always use web search
-                response = await askGroqWithSearch(question, history);
-            }
+            // Selalu gunakan askGroqWithContext (search + history)
+            const response = await askGroqWithContext(question, history);
 
             addToHistory(sender, "user", question);
             addToHistory(sender, "assistant", response);
