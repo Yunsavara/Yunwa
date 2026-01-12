@@ -1,8 +1,8 @@
 const { Jimp, loadFont } = require("jimp");
+const { SANS_64_WHITE } = require("jimp/fonts");
 const { downloadContentFromMessage } = require("baileys");
 const { exec } = require("child_process");
 const { promisify } = require("util");
-const { SANS_10_BLACK } = require("jimp/fonts");
 const fs = require("fs").promises;
 const path = require("path");
 const os = require("os");
@@ -116,7 +116,7 @@ module.exports = {
 
             // Add text if needed
             if (topText || bottomText) {
-                const textPadding = 60;
+                const textPadding = 80;
                 let finalHeight = targetHeight;
                 let yOffset = 0;
 
@@ -133,13 +133,14 @@ module.exports = {
                 await newImage.composite(image, 0, yOffset);
                 image = newImage;
 
-                const font = await loadFont(SANS_10_BLACK);
+                // Load font - SANS_64_WHITE from jimp/fonts
+                const font = await loadFont(SANS_64_WHITE);
 
                 if (topText) {
                     image.print({
                         font,
                         x: 0,
-                        y: 5,
+                        y: 10,
                         text: {
                             text: topText.toUpperCase(),
                             alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
@@ -149,7 +150,7 @@ module.exports = {
                 }
 
                 if (bottomText) {
-                    const textY = finalHeight - 65;
+                    const textY = finalHeight - 70;
                     image.print({
                         font,
                         x: 0,
