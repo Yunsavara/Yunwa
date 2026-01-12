@@ -1,20 +1,14 @@
-const { Jimp, loadFont } = require("jimp");
+const Jimp = require("jimp");
 const { downloadContentFromMessage } = require("baileys");
 
 /**
  * Sticker command - Convert image to WhatsApp sticker with optional text
  * Usage: !sticker [t:text] [b:text]
- * Examples:
- *   !sticker (reply to image)
- *   !sticker t:Hello
- *   !sticker b:World
- *   !sticker t:Hello b:World
  */
 module.exports = {
     name: "sticker",
     description: "Convert image to sticker with optional text overlay",
     category: "media",
-
     async execute(yunwa, msg, sender, pushname, args = []) {
         try {
             await yunwa.sendPresenceUpdate("composing", sender);
@@ -27,13 +21,13 @@ module.exports = {
             if (!hasImage) {
                 await yunwa.sendMessage(sender, {
                     text:
-                        "❌ *How to use:* Reply to an image with !sticker [options]\n\n" +
-                        "*Examples:*\n" +
+                        "❌ *Cara pakai:* Reply foto dengan !sticker [options]\n\n" +
+                        "*Contoh:*\n" +
                         "• !sticker\n" +
                         "• !sticker t:Hello\n" +
                         "• !sticker b:World\n" +
                         "• !sticker t:Hello b:World\n\n" +
-                        "⚠️ Max 30 characters per text",
+                        "⚠️ Maksimal 30 karakter per teks",
                 });
                 return;
             }
@@ -48,7 +42,7 @@ module.exports = {
                         topText = arg.slice(2).trim();
                         if (topText.length > 30) {
                             await yunwa.sendMessage(sender, {
-                                text: "❌ Top text must be 30 characters or less!",
+                                text: "❌ Teks atas maksimal 30 karakter!",
                             });
                             return;
                         }
@@ -56,7 +50,7 @@ module.exports = {
                         bottomText = arg.slice(2).trim();
                         if (bottomText.length > 30) {
                             await yunwa.sendMessage(sender, {
-                                text: "❌ Bottom text must be 30 characters or less!",
+                                text: "❌ Teks bawah maksimal 30 karakter!",
                             });
                             return;
                         }
@@ -64,7 +58,7 @@ module.exports = {
                 }
             }
 
-            // Download the image from quoted message
+            // Download the image
             const stream = await downloadContentFromMessage(
                 quotedMsg.imageMessage,
                 "image",
@@ -76,20 +70,17 @@ module.exports = {
             }
 
             if (!buffer || buffer.length === 0) {
-                await yunwa.sendMessage(sender, {
-                    text: "❌ Failed to download image!",
-                });
-                return;
+                throw new Error("Gagal download gambar");
             }
 
-            // Process image with Jimp
+            // Process with Jimp
             let image = await Jimp.read(buffer);
 
-            // Get image dimensions
-            const width = image.width;
-            const height = image.height;
+            // Get dimensions
+            const width = image.bitmap.width;
+            const height = image.bitmap.height;
 
-            // Calculate dimensions to fit 512x512 maintaining aspect ratio
+            // Calculate target dimensions
             let targetWidth, targetHeight;
             if (width > height) {
                 targetWidth = 512;
@@ -99,80 +90,70 @@ module.exports = {
                 targetWidth = Math.round((width / height) * 512);
             }
 
-            // Resize image
-            image = await image.resize({ w: targetWidth, h: targetHeight });
+            // Resize
+            image = image.resize(targetWidth, targetHeight);
 
-            // Create canvas with padding for text if needed
-            let finalHeight = targetHeight;
-            let yOffset = 0;
-
+            // Add text if needed
             if (topText || bottomText) {
                 const textPadding = 60;
+                let finalHeight = targetHeight;
+                let yOffset = 0;
+
                 if (topText) finalHeight += textPadding;
                 if (bottomText) finalHeight += textPadding;
                 if (topText) yOffset = textPadding;
 
-                // Create new image with extra space for text
-                const newImage = new Jimp({
-                    width: targetWidth,
-                    height: finalHeight,
-                    color: 0x00000000,
-                });
-                await newImage.composite(image, 0, yOffset);
+                // Create new canvas
+                const newImage = new Jimp(targetWidth, finalHeight, 0x00000000);
+                newImage.composite(image, 0, yOffset);
                 image = newImage;
-            }
 
-            // Add text overlays if specified
-            if (topText || bottomText) {
                 // Load font
-                const font = await loadFont("SANS_64_WHITE");
+                const font = await Jimp.loadFont(Jimp.FONT_SANS_64_WHITE);
 
                 if (topText) {
-                    image.print({
+                    image.print(
                         font,
-                        x: 0,
-                        y: 5,
-                        text: {
+                        0,
+                        5,
+                        {
                             text: topText.toUpperCase(),
                             alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
                         },
-                        maxWidth: targetWidth,
-                    });
+                        targetWidth,
+                    );
                 }
 
                 if (bottomText) {
                     const textY = finalHeight - 65;
-                    image.print({
+                    image.print(
                         font,
-                        x: 0,
-                        y: textY,
-                        text: {
+                        0,
+                        textY,
+                        {
                             text: bottomText.toUpperCase(),
                             alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
                         },
-                        maxWidth: targetWidth,
-                    });
+                        targetWidth,
+                    );
                 }
             }
 
-            // Ensure image is properly sized for sticker
-            if (image.width !== 512 || image.height !== 512) {
-                // Add padding to make it 512x512
-                const finalImage = new Jimp({
-                    width: 512,
-                    height: 512,
-                    color: 0x00000000,
-                });
-                const xOffset = Math.floor((512 - image.width) / 2);
-                const yOffsetFinal = Math.floor((512 - image.height) / 2);
-                await finalImage.composite(image, xOffset, yOffsetFinal);
+            // Make 512x512 with padding
+            if (image.bitmap.width !== 512 || image.bitmap.height !== 512) {
+                const finalImage = new Jimp(512, 512, 0x00000000);
+                const xOffset = Math.floor((512 - image.bitmap.width) / 2);
+                const yOffsetFinal = Math.floor(
+                    (512 - image.bitmap.height) / 2,
+                );
+                finalImage.composite(image, xOffset, yOffsetFinal);
                 image = finalImage;
             }
 
-            // Convert to buffer (PNG format for sticker)
-            const stickerBuffer = await image.getBuffer("image/png");
+            // Convert to WebP format for better compatibility
+            const stickerBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
 
-            // Send as sticker
+            // Send sticker
             await yunwa.sendMessage(sender, {
                 sticker: stickerBuffer,
             });
@@ -181,8 +162,9 @@ module.exports = {
         } catch (error) {
             console.error("Error in sticker command:", error);
             await yunwa.sendMessage(sender, {
-                text: `❌ ${error.message || "Error occurred while creating sticker"}\n\n💡 Make sure to reply to an image!`,
+                text: `❌ Error: ${error.message}\n\n💡 Pastikan reply ke foto!`,
             });
+            await yunwa.sendPresenceUpdate("paused", sender);
         }
     },
 };
