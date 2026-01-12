@@ -42,36 +42,57 @@ module.exports = {
                         "❌ *Cara pakai:* Reply foto dengan !sticker [options]\n\n" +
                         "*Contoh:*\n" +
                         "• !sticker\n" +
-                        "• !sticker t:Hello\n" +
-                        "• !sticker b:World\n" +
-                        "• !sticker t:Hello b:World\n\n" +
+                        "• !sticker t:Hello World\n" +
+                        "• !sticker b:Bottom Text\n" +
+                        "• !sticker t:Top Text b:Bottom Text\n\n" +
                         "⚠️ Maksimal 30 karakter per teks",
                 });
                 return;
             }
 
-            // Parse text options
+            // Parse text options - support spaces in text
             let topText = null;
             let bottomText = null;
 
             if (args && args.length > 0) {
-                for (const arg of args) {
-                    if (arg.startsWith("t:")) {
-                        topText = arg.slice(2).trim();
-                        if (topText.length > 30) {
-                            await yunwa.sendMessage(sender, {
-                                text: "❌ Teks atas maksimal 30 karakter!",
-                            });
-                            return;
-                        }
-                    } else if (arg.startsWith("b:")) {
-                        bottomText = arg.slice(2).trim();
-                        if (bottomText.length > 30) {
-                            await yunwa.sendMessage(sender, {
-                                text: "❌ Teks bawah maksimal 30 karakter!",
-                            });
-                            return;
-                        }
+                // Join all args back into a string
+                const fullText = args.join(" ");
+
+                // Find t: and b: positions
+                const tIndex = fullText.indexOf("t:");
+                const bIndex = fullText.indexOf("b:");
+
+                if (tIndex !== -1) {
+                    // Extract top text
+                    let endIndex =
+                        bIndex !== -1 && bIndex > tIndex
+                            ? bIndex
+                            : fullText.length;
+                    topText = fullText.substring(tIndex + 2, endIndex).trim();
+
+                    if (topText.length > 30) {
+                        await yunwa.sendMessage(sender, {
+                            text: "❌ Teks atas maksimal 30 karakter!",
+                        });
+                        return;
+                    }
+                }
+
+                if (bIndex !== -1) {
+                    // Extract bottom text
+                    let endIndex =
+                        tIndex !== -1 && tIndex > bIndex
+                            ? tIndex
+                            : fullText.length;
+                    bottomText = fullText
+                        .substring(bIndex + 2, endIndex)
+                        .trim();
+
+                    if (bottomText.length > 30) {
+                        await yunwa.sendMessage(sender, {
+                            text: "❌ Teks bawah maksimal 30 karakter!",
+                        });
+                        return;
                     }
                 }
             }
@@ -163,15 +184,19 @@ module.exports = {
 
                 if (topText) {
                     const fontSize = calculateFontSize(topText, 512);
+                    // Escape single quotes in text for shell command
+                    const escapedText = topText.replace(/'/g, "'\\''");
                     commands.push(
-                        `-gravity North -pointsize ${fontSize} -fill white -stroke black -strokewidth 5 -font DejaVu-Sans-Bold -annotate +0+20 "${topText.toUpperCase()}"`,
+                        `-gravity North -pointsize ${fontSize} -fill white -stroke black -strokewidth 5 -font DejaVu-Sans-Bold -annotate +0+20 '${escapedText.toUpperCase()}'`,
                     );
                 }
 
                 if (bottomText) {
                     const fontSize = calculateFontSize(bottomText, 512);
+                    // Escape single quotes in text for shell command
+                    const escapedText = bottomText.replace(/'/g, "'\\''");
                     commands.push(
-                        `-gravity South -pointsize ${fontSize} -fill white -stroke black -strokewidth 5 -font DejaVu-Sans-Bold -annotate +0+20 "${bottomText.toUpperCase()}"`,
+                        `-gravity South -pointsize ${fontSize} -fill white -stroke black -strokewidth 5 -font DejaVu-Sans-Bold -annotate +0+20 '${escapedText.toUpperCase()}'`,
                     );
                 }
 
