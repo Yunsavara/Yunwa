@@ -5,6 +5,11 @@
  *   !tagall
  *   !tagall Ada pengumuman penting!
  */
+
+// Cooldown tracking per group (10 minutes)
+const groupCooldowns = new Map();
+const COOLDOWN_TIME = 10 * 60 * 1000; // 10 minutes in milliseconds
+
 module.exports = {
     name: "tagall",
     description: "Mention all members in a group",
@@ -16,6 +21,18 @@ module.exports = {
             if (!sender.endsWith("@g.us")) {
                 await yunwa.sendMessage(sender, {
                     text: "❌ This command can only be used in groups!",
+                });
+                return;
+            }
+
+            // Check cooldown for this group
+            const cooldownEnd = groupCooldowns.get(sender);
+            if (cooldownEnd && Date.now() < cooldownEnd) {
+                const remainingTime = Math.ceil(
+                    (cooldownEnd - Date.now()) / 1000 / 60,
+                );
+                await yunwa.sendMessage(sender, {
+                    text: `⏳ Please wait ${remainingTime} minute(s) before using this command again.`,
                 });
                 return;
             }
@@ -62,6 +79,14 @@ module.exports = {
                 text: fullMessage,
                 mentions: mentions,
             });
+
+            // Set cooldown for this group
+            groupCooldowns.set(sender, Date.now() + COOLDOWN_TIME);
+
+            // Auto cleanup cooldown after time expires
+            setTimeout(() => {
+                groupCooldowns.delete(sender);
+            }, COOLDOWN_TIME);
 
             await yunwa.sendPresenceUpdate("paused", sender);
         } catch (error) {
