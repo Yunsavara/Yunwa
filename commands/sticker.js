@@ -1,5 +1,4 @@
-const { Jimp, loadFont } = require("jimp");
-const { SANS_64_WHITE, SANS_64_BLACK } = require("jimp/fonts");
+const { Jimp } = require("jimp");
 const { downloadContentFromMessage } = require("baileys");
 const { exec } = require("child_process");
 const { promisify } = require("util");
@@ -19,23 +18,21 @@ module.exports = {
     category: "media",
     async execute(yunwa, msg, sender, pushname, args = []) {
         let tempPngPath = null;
+        let tempTextPath = null;
         let tempWebpPath = null;
 
         try {
             await yunwa.sendPresenceUpdate("composing", sender);
 
             // Check if message is a reply to an image
-            // Handle both private chat and group
             const quotedMsg =
                 msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
 
-            // Check various possible locations for image
             let imageMessage = null;
 
             if (quotedMsg?.imageMessage) {
                 imageMessage = quotedMsg.imageMessage;
             } else if (msg.message?.imageMessage) {
-                // Direct image (not quoted)
                 imageMessage = msg.message.imageMessage;
             }
 
@@ -114,99 +111,6 @@ module.exports = {
             // Resize
             image = await image.resize({ w: targetWidth, h: targetHeight });
 
-            // Add text overlay with stroke effect if needed
-            if (topText || bottomText) {
-                // Load fonts
-                const fontWhite = await loadFont(SANS_64_WHITE);
-                const fontBlack = await loadFont(SANS_64_BLACK);
-
-                if (topText) {
-                    const text = topText.toUpperCase();
-                    const topY = 10;
-
-                    // Create stroke effect by printing black text multiple times (offset)
-                    const strokeOffsets = [
-                        [-3, -3],
-                        [-3, 0],
-                        [-3, 3],
-                        [0, -3],
-                        [0, 3],
-                        [3, -3],
-                        [3, 0],
-                        [3, 3],
-                    ];
-
-                    // Print black stroke
-                    for (const [offsetX, offsetY] of strokeOffsets) {
-                        image.print({
-                            font: fontBlack,
-                            x: offsetX,
-                            y: topY + offsetY,
-                            text: {
-                                text: text,
-                                alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-                            },
-                            maxWidth: targetWidth,
-                        });
-                    }
-
-                    // Print white text on top (centered)
-                    image.print({
-                        font: fontWhite,
-                        x: 0,
-                        y: topY,
-                        text: {
-                            text: text,
-                            alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-                        },
-                        maxWidth: targetWidth,
-                    });
-                }
-
-                if (bottomText) {
-                    const text = bottomText.toUpperCase();
-                    const bottomY = targetHeight - 75;
-
-                    // Create stroke effect by printing black text multiple times (offset)
-                    const strokeOffsets = [
-                        [-3, -3],
-                        [-3, 0],
-                        [-3, 3],
-                        [0, -3],
-                        [0, 3],
-                        [3, -3],
-                        [3, 0],
-                        [3, 3],
-                    ];
-
-                    // Print black stroke
-                    for (const [offsetX, offsetY] of strokeOffsets) {
-                        image.print({
-                            font: fontBlack,
-                            x: offsetX,
-                            y: bottomY + offsetY,
-                            text: {
-                                text: text,
-                                alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-                            },
-                            maxWidth: targetWidth,
-                        });
-                    }
-
-                    // Print white text on top (centered)
-                    image.print({
-                        font: fontWhite,
-                        x: 0,
-                        y: bottomY,
-                        text: {
-                            text: text,
-                            alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-                        },
-                        maxWidth: targetWidth,
-                    });
-                }
-            }
-
             // Make 512x512 with padding
             if (image.width !== 512 || image.height !== 512) {
                 const finalImage = new Jimp({
@@ -228,6 +132,10 @@ module.exports = {
                 tmpDir,
                 `sticker_${timestamp}_${randomId}.png`,
             );
+            tempTextPath = path.join(
+                tmpDir,
+                `sticker_text_${timestamp}_${randomId}.png`,
+            );
             tempWebpPath = path.join(
                 tmpDir,
                 `sticker_${timestamp}_${randomId}.webp`,
@@ -235,6 +143,49 @@ module.exports = {
 
             const pngBuffer = await image.getBuffer("image/png");
             await fs.writeFile(tempPngPath, pngBuffer);
+
+            // Add text with ImageMagick if text is provided
+            if (topText || bottomText) {
+                // Calculate font size based on text length
+                const calculateFontSize = (text, imageWidth) => {
+                    const baseSize = 60;
+                    const charWidth = baseSize * 0.6;
+                    const maxWidth = imageWidth - 40; // padding
+                    const textWidth = text.length * charWidth;
+
+                    if (textWidth > maxWidth) {
+                        return Math.floor(maxWidth / text.length / 0.6);
+                    }
+                    return baseSize;
+                };
+
+                let commands = [];
+
+                if (topText) {
+                    const fontSize = calculateFontSize(topText, 512);
+                    commands.push(
+                        `-gravity North -pointsize ${fontSize} -fill white -stroke black -strokewidth 5 -annotate +0+20 "${topText.toUpperCase()}"`,
+                    );
+                }
+
+                if (bottomText) {
+                    const fontSize = calculateFontSize(bottomText, 512);
+                    commands.push(
+                        `-gravity South -pointsize ${fontSize} -fill white -stroke black -strokewidth 5 -annotate +0+20 "${bottomText.toUpperCase()}"`,
+                    );
+                }
+
+                const convertCmd = `convert "${tempPngPath}" -font Impact ${commands.join(" ")} "${tempTextPath}"`;
+
+                try {
+                    await execAsync(convertCmd);
+                    // Use the text version if ImageMagick succeeded
+                    tempPngPath = tempTextPath;
+                } catch (convertError) {
+                    console.error("ImageMagick error:", convertError.message);
+                    // Fall back to image without text
+                }
+            }
 
             // Convert to WebP using cwebp
             await execAsync(
@@ -256,10 +207,12 @@ module.exports = {
 
             let errorMsg = `❌ Error: ${error.message}\n\n💡 Pastikan reply ke foto!`;
 
-            // Check if cwebp is not installed
             if (error.message.includes("cwebp")) {
                 errorMsg =
-                    "❌ cwebp tidak terinstall!\n\nInstall dengan: pkg install libwebp";
+                    "❌ cwebp tidak terinstall!\n\nInstall: pkg install libwebp";
+            } else if (error.message.includes("convert")) {
+                errorMsg =
+                    "❌ ImageMagick tidak terinstall!\n\nInstall: pkg install imagemagick";
             }
 
             await yunwa.sendMessage(sender, { text: errorMsg });
@@ -267,7 +220,9 @@ module.exports = {
         } finally {
             // Cleanup temp files
             try {
-                if (tempPngPath) await fs.unlink(tempPngPath);
+                if (tempPngPath && tempPngPath !== tempTextPath)
+                    await fs.unlink(tempPngPath);
+                if (tempTextPath) await fs.unlink(tempTextPath);
                 if (tempWebpPath) await fs.unlink(tempWebpPath);
             } catch (e) {
                 // Ignore cleanup errors
