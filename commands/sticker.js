@@ -1,13 +1,12 @@
-const { createJimp } = require("@jimp/core");
-const { defaultFormats, defaultPlugins } = require("jimp");
-const webp = require("@jimp/wasm-webp");
+const { Jimp, loadFont } = require("jimp");
 const { downloadContentFromMessage } = require("baileys");
+const { exec } = require("child_process");
+const { promisify } = require("util");
+const fs = require("fs").promises;
+const path = require("path");
+const os = require("os");
 
-// Create custom Jimp with WebP support
-const Jimp = createJimp({
-    formats: [...defaultFormats, webp],
-    plugins: defaultPlugins,
-});
+const execAsync = promisify(exec);
 
 /**
  * Sticker command - Convert image to WhatsApp sticker with optional text
@@ -18,6 +17,9 @@ module.exports = {
     description: "Convert image to sticker with optional text overlay",
     category: "media",
     async execute(yunwa, msg, sender, pushname, args = []) {
+        let tempPngPath = null;
+        let tempWebpPath = null;
+
         try {
             await yunwa.sendPresenceUpdate("composing", sender);
 
@@ -81,8 +83,8 @@ module.exports = {
                 throw new Error("Gagal download gambar");
             }
 
-            // Process with Jimp (custom with WebP support)
-            let image = await Jimp.fromBuffer(buffer);
+            // Process with Jimp
+            let image = await Jimp.read(buffer);
 
             // Get dimensions
             const width = image.width;
@@ -120,7 +122,6 @@ module.exports = {
                 await newImage.composite(image, 0, yOffset);
                 image = newImage;
 
-                const { loadFont } = require("jimp");
                 const font = await loadFont("SANS_64_WHITE");
 
                 if (topText) {
@@ -164,8 +165,22 @@ module.exports = {
                 image = finalImage;
             }
 
-            // Convert to WebP format for sticker
-            const stickerBuffer = await image.getBuffer("image/webp");
+            // Save PNG to temp file
+            const tmpDir = os.tmpdir();
+            const timestamp = Date.now();
+            tempPngPath = path.join(tmpDir, `sticker_${timestamp}.png`);
+            tempWebpPath = path.join(tmpDir, `sticker_${timestamp}.webp`);
+
+            const pngBuffer = await image.getBuffer("image/png");
+            await fs.writeFile(tempPngPath, pngBuffer);
+
+            // Convert to WebP using cwebp
+            await execAsync(
+                `cwebp -q 100 -preset icon "${tempPngPath}" -o "${tempWebpPath}"`,
+            );
+
+            // Read WebP file
+            const stickerBuffer = await fs.readFile(tempWebpPath);
 
             // Send sticker
             await yunwa.sendMessage(sender, {
@@ -175,10 +190,25 @@ module.exports = {
             await yunwa.sendPresenceUpdate("paused", sender);
         } catch (error) {
             console.error("Error in sticker command:", error);
-            await yunwa.sendMessage(sender, {
-                text: `❌ Error: ${error.message}\n\n💡 Pastikan reply ke foto!`,
-            });
+
+            let errorMsg = `❌ Error: ${error.message}\n\n💡 Pastikan reply ke foto!`;
+
+            // Check if cwebp is not installed
+            if (error.message.includes("cwebp")) {
+                errorMsg =
+                    "❌ cwebp tidak terinstall!\n\nInstall dengan: pkg install libwebp";
+            }
+
+            await yunwa.sendMessage(sender, { text: errorMsg });
             await yunwa.sendPresenceUpdate("paused", sender);
+        } finally {
+            // Cleanup temp files
+            try {
+                if (tempPngPath) await fs.unlink(tempPngPath);
+                if (tempWebpPath) await fs.unlink(tempWebpPath);
+            } catch (e) {
+                // Ignore cleanup errors
+            }
         }
     },
 };
