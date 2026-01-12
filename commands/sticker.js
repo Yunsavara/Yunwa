@@ -164,18 +164,19 @@ module.exports = {
                 if (topText) {
                     const fontSize = calculateFontSize(topText, 512);
                     commands.push(
-                        `-gravity North -pointsize ${fontSize} -fill white -stroke black -strokewidth 5 -annotate +0+20 "${topText.toUpperCase()}"`,
+                        `-gravity North -pointsize ${fontSize} -fill white -stroke black -strokewidth 5 -font DejaVu-Sans-Bold -annotate +0+20 "${topText.toUpperCase()}"`,
                     );
                 }
 
                 if (bottomText) {
                     const fontSize = calculateFontSize(bottomText, 512);
                     commands.push(
-                        `-gravity South -pointsize ${fontSize} -fill white -stroke black -strokewidth 5 -annotate +0+20 "${bottomText.toUpperCase()}"`,
+                        `-gravity South -pointsize ${fontSize} -fill white -stroke black -strokewidth 5 -font DejaVu-Sans-Bold -annotate +0+20 "${bottomText.toUpperCase()}"`,
                     );
                 }
 
-                const convertCmd = `convert "${tempPngPath}" -font Impact ${commands.join(" ")} "${tempTextPath}"`;
+                // Use 'magick' for ImageMagick v7
+                const convertCmd = `magick "${tempPngPath}" ${commands.join(" ")} "${tempTextPath}"`;
 
                 try {
                     await execAsync(convertCmd);
@@ -210,7 +211,7 @@ module.exports = {
             if (error.message.includes("cwebp")) {
                 errorMsg =
                     "❌ cwebp tidak terinstall!\n\nInstall: pkg install libwebp";
-            } else if (error.message.includes("convert")) {
+            } else if (error.message.includes("magick")) {
                 errorMsg =
                     "❌ ImageMagick tidak terinstall!\n\nInstall: pkg install imagemagick";
             }
