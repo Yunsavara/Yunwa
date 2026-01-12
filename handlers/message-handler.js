@@ -107,7 +107,7 @@ function setupMessageHandler(yunwa) {
             if (!body.startsWith("!")) return;
 
             const args = body.slice(1).trim().split(/ +/);
-            const commandName = args[0].toLowerCase();
+            const commandName = args.shift().toLowerCase();
 
             if (isOnCooldown(sender, commandName)) {
                 return;
@@ -125,7 +125,7 @@ function setupMessageHandler(yunwa) {
 
             if (command) {
                 try {
-                    await command.execute(yunwa, msg, sender, pushname);
+                    await command.execute(yunwa, msg, sender, pushname, args);
                     console.log(
                         chalk.green(`Command '${commandName}' executed`),
                     );

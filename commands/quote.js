@@ -6,8 +6,6 @@ const { generateQuote } = require("../scrape/quote");
  * Examples:
  *   !quote
  *   !quote love
- *   !quote friends
- *   !quote life
  */
 module.exports = {
     name: "quote",
@@ -15,27 +13,17 @@ module.exports = {
         "Generate an inspirational quote. Use !quote [topic] to specify a topic.",
     category: "fun",
 
-    async execute(yunwa, msg, sender, pushname, args) {
+    async execute(yunwa, msg, sender, pushname, args = []) {
         try {
             await yunwa.sendPresenceUpdate("composing", sender);
 
             // Get topic from arguments
-            const topic = args.join(" ").trim() || null;
-
-            // Show what topic is being used
-            if (topic) {
-                await yunwa.sendMessage(sender, {
-                    text: `🔍 Generating quote about: *${topic}*...`,
-                });
-            }
+            const topic =
+                args && args.length > 0 ? args.join(" ").trim() : null;
 
             const quote = await generateQuote(topic);
 
-            const caption =
-                `✨ *Quote of the Day* ✨\n\n` +
-                `_${quote.quote}_\n\n` +
-                `— *${quote.author}*` +
-                (quote.topic ? `\n\n📌 Topic: ${quote.topic}` : "");
+            const caption = `❝${quote.quote}❞\n\n` + `— *${quote.author}*`;
 
             await yunwa.sendMessage(sender, {
                 text: caption,
