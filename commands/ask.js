@@ -70,8 +70,12 @@ module.exports = {
                 askGroqSimple,
             } = require("../scrape/groq");
 
-            // Decide if we need web search
-            const needsSearch = shouldSearch(question, isFollowUp, history);
+            // Scoring-based router with mini LLM fallback
+            const needsSearch = await shouldSearch(
+                question,
+                isFollowUp,
+                history,
+            );
 
             let response;
             if (needsSearch) {
