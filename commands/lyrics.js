@@ -1,11 +1,11 @@
 const { searchLyrics } = require("../scrape/lrclib");
 
 /**
- * Lyric command - Search and display song lyrics
- * Usage: !lyric <song name>
+ * Lyrics command - Search and display song lyrics
+ * Usage: !lyrics <song name>
  */
 module.exports = {
-    name: "lyric",
+    name: "lyrics",
     description: "Search song lyrics from LRCLIB",
 
     async execute(yunwa, msg, sender, pushname) {
@@ -15,22 +15,22 @@ module.exports = {
                 msg.message.extendedTextMessage?.text ||
                 "";
 
-            // Extract query dari command
-            const query = body.slice(6).trim(); // Remove "!lyric"
+            // Extract query from command
+            const query = body.slice(7).trim(); // Remove "!lyrics"
 
             if (!query) {
                 await yunwa.sendMessage(sender, {
                     text:
-                        "❌ *Cara pakai:* !lyric <nama lagu>\n\n" +
-                        "*Contoh:*\n" +
-                        "• !lyric focus hearts2hearts\n" +
-                        "• !lyric perfect ed sheeran\n" +
-                        "• !lyric bohemian rhapsody",
+                        "❌ *How to use:* !lyrics <song name>\n\n" +
+                        "*Examples:*\n" +
+                        "• !lyrics focus hearts2hearts\n" +
+                        "• !lyrics perfect ed sheeran\n" +
+                        "• !lyrics bohemian rhapsody",
                 });
                 return;
             }
 
-            // Kirim typing indicator
+            // Send typing indicator
             await yunwa.sendPresenceUpdate("composing", sender);
 
             // Search lyrics
@@ -39,7 +39,7 @@ module.exports = {
             // Check if plainLyrics exist
             if (!result.plainLyrics || result.plainLyrics.trim() === "") {
                 await yunwa.sendMessage(sender, {
-                    text: `❌ Lirik tidak tersedia untuk lagu ini.\n\n📝 *${result.trackName}*\n👤 ${result.artistName}`,
+                    text: `❌ Lyrics not available for this song.\n\n📝 *${result.trackName}*\n👤 ${result.artistName}`,
                 });
                 return;
             }
@@ -62,9 +62,9 @@ module.exports = {
 
             await yunwa.sendPresenceUpdate("paused", sender);
         } catch (error) {
-            console.error("Error in lyric command:", error);
+            console.error("Error in lyrics command:", error);
             await yunwa.sendMessage(sender, {
-                text: `❌ ${error.message || "Terjadi error saat mencari lirik"}`,
+                text: `❌ ${error.message || "Error occurred while searching lyrics"}`,
             });
         }
     },

@@ -3,14 +3,14 @@ const path = require("path");
 
 module.exports = {
     name: "intro",
-    description: "Show bot introduction with image and available commands",
+    description: "Show bot introduction",
 
     async execute(yunwa, msg, sender, pushname) {
         try {
-            // Auto-load semua commands dari folder commands/
+            // Auto-load all commands from commands/ folder
             const commands = require("./index");
 
-            // Build command list dari commands object
+            // Build command list from commands object
             let commandList = "*Available Commands:*\n";
 
             // Array of command info
@@ -27,20 +27,20 @@ module.exports = {
                 commandList += `• !${cmd.name} - ${cmd.description}\n`;
             });
 
-            commandList += `\n✨ Ketik command dengan prefix ! untuk menggunakannya`;
+            commandList += `\n✨ Type command with ! prefix to use it`;
 
             const imagePath = path.join(__dirname, "../assets/intro.jpg");
 
             if (!fs.existsSync(imagePath)) {
-                // Kirim text saja tanpa gambar
+                // Send text only without image
                 await yunwa.sendMessage(sender, {
-                    text: `*Halo ${pushname}!*\n\nAku adalah *Yunwa*, asisten WhatsApp yang siap membantu kamu!\n\n${commandList}`,
+                    text: `*Hello ${pushname}!*\n\nI'm *Yunwa*, a WhatsApp assistant ready to help you!\n\n${commandList}`,
                 });
             } else {
-                // Kirim dengan gambar
+                // Send with image
                 const imageBuffer = fs.readFileSync(imagePath);
 
-                const caption = `*Halo ${pushname}!*\n\nAku adalah *Yunwa*, asisten WhatsApp yang siap membantu kamu!\n\n${commandList}`;
+                const caption = `*Hello ${pushname}!*\n\nI'm *Yunwa*, a WhatsApp assistant ready to help you!\n\n${commandList}`;
 
                 await yunwa.sendMessage(sender, {
                     image: imageBuffer,
@@ -50,7 +50,7 @@ module.exports = {
         } catch (error) {
             console.error("Error sending intro:", error);
             await yunwa.sendMessage(sender, {
-                text: `❌ Maaf, terjadi error saat mengirim intro.\n\n🤖 *Yunwa Bot*\n\nCoba lagi nanti ya!`,
+                text: `❌ Sorry, an error occurred while sending intro.\n\n🤖 *Yunwa Bot*\n\nPlease try again later!`,
             });
         }
     },

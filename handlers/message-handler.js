@@ -62,6 +62,8 @@ function setupMessageHandler(yunwa) {
             const body =
                 msg.message.conversation ||
                 msg.message.extendedTextMessage?.text ||
+                msg.message.imageMessage?.caption ||
+                msg.message.videoMessage?.caption ||
                 "";
 
             const sender = msg.key.remoteJid;
@@ -107,7 +109,7 @@ function setupMessageHandler(yunwa) {
             if (!body.startsWith("!")) return;
 
             const args = body.slice(1).trim().split(/ +/);
-            const commandName = args[0].toLowerCase();
+            const commandName = args.shift().toLowerCase();
 
             if (isOnCooldown(sender, commandName)) {
                 return;
@@ -125,7 +127,7 @@ function setupMessageHandler(yunwa) {
 
             if (command) {
                 try {
-                    await command.execute(yunwa, msg, sender, pushname);
+                    await command.execute(yunwa, msg, sender, pushname, args);
                     console.log(
                         chalk.green(`Command '${commandName}' executed`),
                     );
@@ -135,7 +137,7 @@ function setupMessageHandler(yunwa) {
                         error,
                     );
                     await yunwa.sendMessage(sender, {
-                        text: "Terjadi error saat menjalankan command!",
+                        text: "Error occurred while executing command!",
                     });
                 }
             } else {

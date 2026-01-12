@@ -7,7 +7,7 @@ const axios = require("axios");
  */
 module.exports = {
     name: "pin",
-    description: "Cari gambar dari Pinterest (via Resita API)",
+    description: "Searches Pinterest for images",
     category: "media",
 
     async execute(yunwa, msg, sender, pushname) {
@@ -22,8 +22,8 @@ module.exports = {
             if (!query) {
                 await yunwa.sendMessage(sender, {
                     text:
-                        "❌ *Cara pakai:* !pin <kata kunci>\n\n" +
-                        "*Contoh:*\n" +
+                        "❌ *How to use:* !pin <keyword>\n\n" +
+                        "*Examples:*\n" +
                         "• !pin aesthetic anime\n" +
                         "• !pin nmixx kim jiwoo\n",
                 });
@@ -42,14 +42,14 @@ module.exports = {
 
             await yunwa.sendMessage(sender, {
                 image: imageBuffer,
-                caption: `Hasil Pinterest untuk: *${query}*`,
+                caption: `*${query}*\n\nSource: Pinterest\n${imageUrl}`,
             });
 
             await yunwa.sendPresenceUpdate("paused", sender);
         } catch (error) {
             console.error("Error in pin command:", error);
             await yunwa.sendMessage(sender, {
-                text: `❌ ${error.message || "Terjadi error saat mencari gambar Pinterest"}`,
+                text: `❌ ${error.message || "Error occurred while searching Pinterest images"}`,
             });
         }
     },

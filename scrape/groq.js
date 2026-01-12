@@ -30,101 +30,33 @@ function convertToWhatsAppFormat(text) {
         .replace(/\[(.*?)\]\((.*?)\)/g, "$1: $2")
         .replace(/^#+\s/gm, "")
         .replace(/\n{3,}/g, "\n\n")
+        .replace(/【[^】]*】/g, "")
+        .replace(/[†‡§¶]/g, "")
         .trim();
 }
 
-async function askGroq(question) {
+/**
+ * Simple Groq response without web search
+ * Only uses conversation history and LLM knowledge
+ * Used for: conversational questions, follow-ups, general knowledge
+ */
+async function askGroqSimple(question, history = []) {
     try {
         const groq = getGroqClient();
 
-        const chatCompletion = await groq.chat.completions.create({
-            messages: [
-                {
-                    role: "system",
-                    content:
-                        "Kamu asisten AI yang helpful dan ramah. " +
-                        "Jawab dengan jelas dan padat. " +
-                        "Gunakan bahasa Indonesia yang natural.",
-                },
-                {
-                    role: "user",
-                    content: question,
-                },
-            ],
-            model: "openai/gpt-oss-120b",
-            temperature: 0.5,
-            max_tokens: 1500,
-        });
-
-        const response =
-            chatCompletion.choices[0]?.message?.content ||
-            "Maaf, tidak ada respon.";
-
-        return convertToWhatsAppFormat(response);
-    } catch (error) {
-        console.error("Error asking Groq:", error);
-        if (error.message.includes("GROQ_API_KEY")) {
-            throw error;
-        }
-        throw new Error("Gagal mendapatkan respon dari Groq AI");
-    }
-}
-
-async function checkIfNeedsWebSearch(question, history = []) {
-    try {
-        const groq = getGroqClient();
+        console.log("Groq: Answering with history only (no search)");
 
         const messages = [
             {
                 role: "system",
                 content:
-                    "Jawab YES jika pertanyaan butuh data baru dari web. " +
-                    "Jawab NO jika cukup dari history. " +
-                    "Jawab HANYA: YES atau NO",
+                    "You are a helpful and friendly AI assistant. " +
+                    "Answer based on your knowledge and conversation history. " +
+                    "Answer clearly and concisely. " +
+                    "Use *bold* for important emphasis only. " +
+                    "Use natural language.",
             },
             ...history.slice(-6),
-            {
-                role: "user",
-                content: `Pertanyaan: "${question}"\nButuh web search?`,
-            },
-        ];
-
-        const chatCompletion = await groq.chat.completions.create({
-            messages: messages,
-            model: "openai/gpt-oss-120b",
-            temperature: 0.1,
-            max_tokens: 5,
-        });
-
-        const response =
-            chatCompletion.choices[0]?.message?.content?.trim().toUpperCase() ||
-            "YES";
-        const needsSearch = response.includes("YES");
-
-        console.log(
-            `AI evaluated: ${needsSearch ? "Need web search" : "Use context"}`,
-        );
-
-        return needsSearch;
-    } catch (error) {
-        console.error("Error checking if needs web search:", error);
-        return true;
-    }
-}
-
-async function askGroqWithContext(question, history = []) {
-    try {
-        const groq = getGroqClient();
-
-        const messages = [
-            {
-                role: "system",
-                content:
-                    "Kamu asisten AI yang menjawab dengan jelas dan padat. " +
-                    "Fokus pada pertanyaan user. Gunakan konteks sebelumnya jika relevan. " +
-                    "Jawab dalam bahasa Indonesia. Gunakan *bold* untuk penekanan penting saja.",
-            },
-            ...history.slice(-6), // Batasi history, ambil 6 message terakhir aja
             {
                 role: "user",
                 content: question,
@@ -134,43 +66,54 @@ async function askGroqWithContext(question, history = []) {
         const chatCompletion = await groq.chat.completions.create({
             messages: messages,
             model: "openai/gpt-oss-120b",
-            temperature: 0.3,
+            temperature: 0.5,
             max_tokens: 1500,
         });
 
         const response =
             chatCompletion.choices[0]?.message?.content ||
-            "Maaf, tidak ada respon.";
+            "Sorry, no response available.";
 
         return convertToWhatsAppFormat(response);
     } catch (error) {
-        console.error("Error asking Groq with context:", error);
-        throw new Error("Gagal mendapatkan respon dari Groq AI");
+        console.error("Error asking Groq:", error);
+        if (error.message.includes("GROQ_API_KEY")) {
+            throw error;
+        }
+        throw new Error("Failed to get response from Groq AI");
     }
 }
 
-async function askGroqWithSearch(question, history = []) {
+/**
+ * Groq response with web search context
+ * Searches the web first, then answers using search results + conversation history
+ * Used for: time-sensitive questions, specific queries, news, current events
+ */
+async function askGroqWithContext(question, history = []) {
     try {
         const groq = getGroqClient();
-        const { searchWeb } = require("./tavily");
+        const { searchWeb, getLastSearchSources } = require("./tavily");
 
-        console.log("Searching web...");
+        console.log("Tavily: Searching web for context...");
         const searchResults = await searchWeb(question);
 
-        console.log("Processing with AI...");
+        console.log("Groq: Answering with history + search context");
 
         const messages = [
             {
                 role: "system",
                 content:
-                    "Kamu asisten AI yang menjawab berdasarkan web search. " +
-                    "Jawab jelas dan padat. Cite sumber dengan [1], [2]. " +
-                    "Tampilkan daftar sumber di akhir.",
+                    "You are an AI assistant that answers based on conversation history and web search results. " +
+                    "Answer clearly and concisely. " +
+                    "Use conversation history if available. " +
+                    "Cite sources with [1], [2], [3] when quoting information from the web. " +
+                    "Focus on the answer, sources will be added automatically. " +
+                    "Use *bold* for important emphasis only.",
             },
-            ...history.slice(-4), // Ambil 4 message terakhir
+            ...history.slice(-6),
             {
                 role: "user",
-                content: `${question}\n\nWeb Search:\n${searchResults}`,
+                content: `${question}\n\nWeb Search Results:\n${searchResults}`,
             },
         ];
 
@@ -181,27 +124,33 @@ async function askGroqWithSearch(question, history = []) {
             max_tokens: 2048,
         });
 
-        const response =
+        let response =
             chatCompletion.choices[0]?.message?.content ||
-            "Maaf, tidak ada respon.";
+            "Sorry, no response available.";
+
+        const sources = getLastSearchSources();
+        if (sources && sources.length > 0) {
+            response += "\n─────────────\n*Sources:*\n";
+            sources.forEach((source, index) => {
+                response += `[${index + 1}] ${source.title}\n${source.url}\n\n`;
+            });
+        }
 
         return convertToWhatsAppFormat(response);
     } catch (error) {
-        console.error("Error asking Groq with search:", error);
+        console.error("Error asking Groq with context:", error);
         if (
             error.message.includes("GROQ_API_KEY") ||
             error.message.includes("TAVILY_API_KEY")
         ) {
             throw error;
         }
-        throw new Error("Gagal mendapatkan respon dari AI");
+        throw new Error("Failed to get response from Groq AI");
     }
 }
 
 module.exports = {
     groqClient,
-    askGroq,
+    askGroqSimple,
     askGroqWithContext,
-    askGroqWithSearch,
-    checkIfNeedsWebSearch,
 };
