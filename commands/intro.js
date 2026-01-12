@@ -3,7 +3,7 @@ const path = require("path");
 
 module.exports = {
     name: "intro",
-    description: "Show bot introduction with image and available commands",
+    description: "Show bot introduction",
 
     async execute(yunwa, msg, sender, pushname) {
         try {
