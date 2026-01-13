@@ -25,7 +25,7 @@ module.exports = {
 
             const quote = await generateQuote(topic);
 
-            const caption = `❝${quote.quote}❞\n\n` + `— *${quote.author}*`;
+            const caption = `❝ ${quote.quote} ❞\n\n` + `— *${quote.author}*`;
 
             await yunwa.sendMessage(sender, {
                 text: caption,
