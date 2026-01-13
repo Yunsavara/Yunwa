@@ -201,27 +201,49 @@ module.exports = {
                     return baseFontSize;
                 };
 
+                // Path to custom Impact font in assets
+                const impactFontPath = path.join(
+                    __dirname,
+                    "../assets/fonts/impact.ttf",
+                );
+
+                // Check if custom font exists
+                let useCustomFont = false;
+                try {
+                    await fs.access(impactFontPath);
+                    useCustomFont = true;
+                } catch (e) {
+                    console.log(
+                        "Custom Impact font not found, using system fonts",
+                    );
+                }
+
                 let commands = [];
 
                 if (topText) {
                     const fontSize = calculateFontSize(topText, 512);
                     const escapedText = topText.replace(/'/g, "'\\''");
                     // Meme-style text: Impact font, white fill, black stroke
+                    const fontArg = useCustomFont
+                        ? `"${impactFontPath}"`
+                        : "Impact";
                     commands.push(
-                        `-gravity North -pointsize ${fontSize} -fill white -stroke black -strokewidth 4 -font Impact -annotate +0+20 '${escapedText.toUpperCase()}'`,
+                        `-gravity North -pointsize ${fontSize} -fill white -stroke black -strokewidth 4 -font ${fontArg} -annotate +0+20 '${escapedText.toUpperCase()}'`,
                     );
                 }
 
                 if (bottomText) {
                     const fontSize = calculateFontSize(bottomText, 512);
                     const escapedText = bottomText.replace(/'/g, "'\\''");
+                    const fontArg = useCustomFont
+                        ? `"${impactFontPath}"`
+                        : "Impact";
                     commands.push(
-                        `-gravity South -pointsize ${fontSize} -fill white -stroke black -strokewidth 4 -font Impact -annotate +0+20 '${escapedText.toUpperCase()}'`,
+                        `-gravity South -pointsize ${fontSize} -fill white -stroke black -strokewidth 4 -font ${fontArg} -annotate +0+20 '${escapedText.toUpperCase()}'`,
                     );
                 }
 
-                // Use 'magick' for ImageMagick v7 with Impact font
-                // If Impact is not available, fallback to Arial-Bold or DejaVu-Sans-Bold
+                // Use 'magick' for ImageMagick v7
                 const convertCmd = `magick "${tempPngPath}" ${commands.join(" ")} "${tempTextPath}"`;
 
                 try {
@@ -231,10 +253,13 @@ module.exports = {
                 } catch (convertError) {
                     console.error("ImageMagick error:", convertError.message);
 
-                    // Try fallback fonts if Impact is not available
-                    if (convertError.message.includes("Impact")) {
+                    // Try fallback fonts if custom font fails
+                    if (
+                        !useCustomFont ||
+                        convertError.message.includes("font")
+                    ) {
                         console.log(
-                            "Impact font not found, trying fallback fonts...",
+                            "Primary font failed, trying fallback fonts...",
                         );
 
                         const fallbackFonts = [
@@ -248,7 +273,7 @@ module.exports = {
                             try {
                                 const fallbackCommands = commands.map((cmd) =>
                                     cmd.replace(
-                                        "-font Impact",
+                                        /-font\s+[^\s]+/,
                                         `-font ${fallbackFont}`,
                                     ),
                                 );
