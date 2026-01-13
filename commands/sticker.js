@@ -140,7 +140,7 @@ function calculateCropY(scaledHeight, targetSize, scale) {
  * @returns {Object} - Processed Jimp image
  */
 async function processImage(imageBuffer) {
-    const image = await Jimp.read(imageBuffer);
+    let image = await Jimp.read(imageBuffer);
 
     const width = image.width;
     const height = image.height;
@@ -150,15 +150,15 @@ async function processImage(imageBuffer) {
     const scaledWidth = Math.round(width * scale);
     const scaledHeight = Math.round(height * scale);
 
-    // Resize with cover strategy (returns the image instance, not a promise)
-    image.resize({ w: scaledWidth, h: scaledHeight });
+    // Resize with cover strategy
+    image = await image.resize({ w: scaledWidth, h: scaledHeight });
 
     // Calculate crop positions
     const cropX = Math.floor((scaledWidth - STICKER_SIZE) / 2);
     const cropY = calculateCropY(scaledHeight, STICKER_SIZE, scale);
 
-    // Crop to 512x512 (returns the image instance, not a promise)
-    image.crop({
+    // Crop to 512x512
+    image = await image.crop({
         x: cropX,
         y: cropY,
         w: STICKER_SIZE,
@@ -342,10 +342,10 @@ module.exports = {
                 return;
             }
 
-            // Download image (ADDED AWAIT)
+            // Download image
             const imageBuffer = await downloadImage(imageMessage);
 
-            // Process image (ADDED AWAIT)
+            // Process image
             const processedImage = await processImage(imageBuffer);
 
             // Generate temp file paths
@@ -354,11 +354,11 @@ module.exports = {
             tempTextPath = tempPaths.tempTextPath;
             tempWebpPath = tempPaths.tempWebpPath;
 
-            // Save PNG to temp file (FIXED: Use encode instead of getBuffer)
+            // Save PNG to temp file
             const pngBuffer = await processedImage.getBuffer("image/png");
             await fs.writeFile(tempPngPath, pngBuffer);
 
-            // Add text overlay if needed (ADDED AWAIT)
+            // Add text overlay if needed
             const finalPngPath = await addTextOverlay(
                 tempPngPath,
                 tempTextPath,
@@ -369,7 +369,7 @@ module.exports = {
             // Convert to WebP
             await convertToWebp(finalPngPath, tempWebpPath);
 
-            // Read WebP and add metadata (ADDED AWAIT)
+            // Read WebP and add metadata
             const stickerBuffer = await fs.readFile(tempWebpPath);
             const stickerWithExif = await addStickerMetadata(stickerBuffer);
 
