@@ -5,6 +5,7 @@
 module.exports = {
     name: "hello",
     description: "Greet the user",
+    category: "general",
 
     async execute(yunwa, msg, sender, pushname) {
         await yunwa.sendMessage(sender, {
