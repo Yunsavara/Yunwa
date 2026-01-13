@@ -2,7 +2,7 @@ const Groq = require("groq-sdk");
 
 /**
  * Generate quote using Groq AI
- * @param {string} topic - Topic for the quote (e.g., "anime", "motivasi", "ahli", "cinta")
+ * @param {string} topic - Topic for the quote (e.g., "naruto", "motivasi", "ahli", "cinta")
  * @returns {Promise<Object>} Quote object with text and author
  */
 async function generateQuote(topic = "random") {
@@ -14,15 +14,15 @@ async function generateQuote(topic = "random") {
     const groq = new Groq({ apiKey });
 
     const prompt = topic
-        ? `Generate a unique and inspiring quote about "${topic}". The quote can be from a real person, fictional character, or original wisdom. Make it meaningful and match the topic. Respond in the same language as the topic.`
-        : `Generate a unique and inspiring random quote. Can be from anyone or original wisdom. Make it meaningful.`;
+        ? `Generate a quote based on "${topic}". If it's a specific person or character name (like Naruto, Einstein, etc), give a direct quote FROM that person/character. If it's a general topic (like "motivasi", "cinta"), give a relevant inspirational quote. Make it unique and meaningful. Respond in the same language as the topic.`
+        : `Generate a unique and inspiring random quote. Make it meaningful.`;
 
     try {
         const chatCompletion = await groq.chat.completions.create({
             messages: [
                 {
                     role: "system",
-                    content: `You are a quote generator. Generate unique, inspiring quotes based on the given topic. Format your response exactly as: the quote text, then a new line, then "— Author Name or Source". Be creative and make each quote unique. Never repeat the same quote. Do not use quotation marks around the quote.`,
+                    content: `You are a quote generator. When given a specific person or character name (e.g., "Naruto", "Einstein", "Luffy"), provide a famous quote DIRECTLY FROM that person/character - not just about them. When given a general topic, provide a relevant inspirational quote. Format: the quote text, then a new line, then "— Author/Character Name (Source if applicable)". Be creative and make each quote unique. Do not use quotation marks around the quote.`,
                 },
                 {
                     role: "user",
