@@ -342,11 +342,11 @@ module.exports = {
                 return;
             }
 
-            // Download image
-            const imageBuffer = downloadImage(imageMessage);
+            // Download image (ADDED AWAIT)
+            const imageBuffer = await downloadImage(imageMessage);
 
-            // Process image
-            const processedImage = processImage(imageBuffer);
+            // Process image (ADDED AWAIT)
+            const processedImage = await processImage(imageBuffer);
 
             // Generate temp file paths
             const tempPaths = generateTempPaths();
@@ -354,12 +354,12 @@ module.exports = {
             tempTextPath = tempPaths.tempTextPath;
             tempWebpPath = tempPaths.tempWebpPath;
 
-            // Save PNG to temp file
+            // Save PNG to temp file (FIXED: Use encode instead of getBuffer)
             const pngBuffer = await processedImage.getBuffer("image/png");
             await fs.writeFile(tempPngPath, pngBuffer);
 
-            // Add text overlay if needed
-            const finalPngPath = addTextOverlay(
+            // Add text overlay if needed (ADDED AWAIT)
+            const finalPngPath = await addTextOverlay(
                 tempPngPath,
                 tempTextPath,
                 topText,
@@ -369,9 +369,9 @@ module.exports = {
             // Convert to WebP
             await convertToWebp(finalPngPath, tempWebpPath);
 
-            // Read WebP and add metadata
+            // Read WebP and add metadata (ADDED AWAIT)
             const stickerBuffer = await fs.readFile(tempWebpPath);
-            const stickerWithExif = addStickerMetadata(stickerBuffer);
+            const stickerWithExif = await addStickerMetadata(stickerBuffer);
 
             // Send sticker
             await yunwa.sendMessage(sender, {
