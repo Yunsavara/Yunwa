@@ -39,13 +39,13 @@ module.exports = {
             if (!imageMessage) {
                 await yunwa.sendMessage(sender, {
                     text:
-                        "❌ *Cara pakai:* Reply foto dengan !sticker [options]\n\n" +
-                        "*Contoh:*\n" +
+                        "❌ *How to use:* Reply to a photo with !sticker [options]\n\n" +
+                        "*Examples:*\n" +
                         "• !sticker\n" +
                         "• !sticker t:Hello World\n" +
                         "• !sticker b:Bottom Text\n" +
                         "• !sticker t:Top Text b:Bottom Text\n\n" +
-                        "⚠️ Maksimal 30 karakter per teks",
+                        "⚠️ Maximum 30 characters per text",
                 });
                 return;
             }
@@ -72,7 +72,7 @@ module.exports = {
 
                     if (topText.length > 30) {
                         await yunwa.sendMessage(sender, {
-                            text: "❌ Teks atas maksimal 30 karakter!",
+                            text: "❌ Top text maximum 30 characters!",
                         });
                         return;
                     }
@@ -90,7 +90,7 @@ module.exports = {
 
                     if (bottomText.length > 30) {
                         await yunwa.sendMessage(sender, {
-                            text: "❌ Teks bawah maksimal 30 karakter!",
+                            text: "❌ Bottom text maximum 30 characters!",
                         });
                         return;
                     }
@@ -109,7 +109,7 @@ module.exports = {
             }
 
             if (!buffer || buffer.length === 0) {
-                throw new Error("Gagal download gambar");
+                throw new Error("Failed to download image");
             }
 
             // Process with Jimp
@@ -165,8 +165,8 @@ module.exports = {
                 const calculateFontSize = (text, imageWidth) => {
                     const baseFontSize = 55;
                     const minFontSize = 25;
-                    const horizontalPadding = 80; // Padding kiri-kanan total
-                    const charWidthRatio = 0.65; // Ratio lebar karakter terhadap font size
+                    const horizontalPadding = 80; // Total left-right padding
+                    const charWidthRatio = 0.65; // Character width ratio to font size
 
                     const availableWidth = imageWidth - horizontalPadding;
                     const estimatedTextWidth =
@@ -232,14 +232,14 @@ module.exports = {
             console.error("Error in sticker command:", error);
             console.error("Stack:", error.stack);
 
-            let errorMsg = `❌ Error: ${error.message}\n\n💡 Pastikan reply ke foto!`;
+            let errorMsg = `❌ Error: ${error.message}\n\n💡 Make sure to reply to a photo!`;
 
             if (error.message.includes("cwebp")) {
                 errorMsg =
-                    "❌ cwebp tidak terinstall!\n\nInstall: pkg install libwebp";
+                    "❌ cwebp is not installed!\n\nInstall: pkg install libwebp";
             } else if (error.message.includes("magick")) {
                 errorMsg =
-                    "❌ ImageMagick tidak terinstall!\n\nInstall: pkg install imagemagick";
+                    "❌ ImageMagick is not installed!\n\nInstall: pkg install imagemagick";
             }
 
             await yunwa.sendMessage(sender, { text: errorMsg });
