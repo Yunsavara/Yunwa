@@ -137,14 +137,14 @@ module.exports = {
             let cropY;
             if (scaledHeight > targetSize) {
                 if (scale > 1.5) {
-                    // Heavy zoom - bias to top (30% from top instead of 50%)
-                    cropY = Math.floor((scaledHeight - targetSize) * 0.3);
+                    // Heavy zoom - very strong top bias
+                    cropY = Math.floor((scaledHeight - targetSize) * 0.1);
                 } else if (scale > 1.2) {
-                    // Medium zoom - slightly bias to top (40% from top)
-                    cropY = Math.floor((scaledHeight - targetSize) * 0.4);
+                    // Medium zoom - strong top bias
+                    cropY = Math.floor((scaledHeight - targetSize) * 0.2);
                 } else {
-                    // Light zoom - center
-                    cropY = Math.floor((scaledHeight - targetSize) / 2);
+                    // Light zoom - moderate top bias
+                    cropY = Math.floor((scaledHeight - targetSize) * 0.25);
                 }
             } else {
                 cropY = 0;
