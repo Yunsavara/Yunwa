@@ -218,6 +218,7 @@ const GENERAL_KNOWLEDGE = {
 };
 
 // Opinion/subjective questions
+// Opinion/subjective questions
 const SUBJECTIVE = {
     keywords: [
         "menurutmu",
@@ -231,6 +232,31 @@ const SUBJECTIVE = {
         "rekomendasikan",
     ],
     weight: -2,
+};
+
+// Bot identity questions - should not need search
+const BOT_IDENTITY = {
+    keywords: [
+        "who are you",
+        "siapa kamu",
+        "siapa anda",
+        "what are you",
+        "apa kamu",
+        "your name",
+        "namamu",
+        "nama kamu",
+        "about you",
+        "tentang kamu",
+        "yunwa",
+        "yunsavara",
+        "who made you",
+        "siapa yang buat",
+        "creator",
+        "pembuat",
+        "created by",
+        "dibuat oleh",
+    ],
+    weight: -4,
 };
 
 // Location-specific patterns
@@ -353,6 +379,11 @@ function calculateScore(question, isFollowUp, history) {
     if (SUBJECTIVE.keywords.some((k) => lowerQuestion.includes(k))) {
         score += SUBJECTIVE.weight;
         reasons.push(`Subjective question (${SUBJECTIVE.weight})`);
+    }
+
+    if (BOT_IDENTITY.keywords.some((k) => lowerQuestion.includes(k))) {
+        score += BOT_IDENTITY.weight;
+        reasons.push(`Bot identity question (${BOT_IDENTITY.weight})`);
     }
 
     const wordCount = question.trim().split(/\s+/).length;
