@@ -7,6 +7,7 @@ const { searchLyrics } = require("../scrape/lrclib");
 module.exports = {
     name: "lyrics",
     description: "Search song lyrics from LRCLIB",
+    category: "fun",
 
     async execute(yunwa, msg, sender, pushname) {
         try {

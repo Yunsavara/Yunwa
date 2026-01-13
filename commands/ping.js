@@ -5,6 +5,7 @@
 module.exports = {
     name: "ping",
     description: "Test bot responsiveness",
+    category: "general",
 
     async execute(yunwa, msg, sender, pushname) {
         await yunwa.sendMessage(sender, {

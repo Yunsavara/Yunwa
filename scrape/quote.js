@@ -1,11 +1,11 @@
 const Groq = require("groq-sdk");
 
 /**
- * Generate motivational quote using Groq AI
- * @param {string} topic - Topic for the quote (optional)
+ * Generate quote using Groq AI
+ * @param {string} topic - Topic for the quote (e.g., "naruto", "motivasi", "ahli", "cinta")
  * @returns {Promise<Object>} Quote object with text and author
  */
-async function generateQuote(topic = null) {
+async function generateQuote(topic = "random") {
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
         throw new Error("GROQ_API_KEY not configured! Run setup wizard.");
@@ -13,27 +13,16 @@ async function generateQuote(topic = null) {
 
     const groq = new Groq({ apiKey });
 
-    const prompt = `
-    If "${topic}" refers to a fictional character, anime, manga, movie, or game,
-    give a famous quote from that fictional character.
-
-    If it refers to a general concept or real-world topic,
-    give a real, famous quote from a well-known real person.
-
-    Do not invent quotes or authors.
-    Respond in the same language as the topic.
-
-    Format:
-    Quote text
-    — Author or Character (Source if fictional)
-    `;
+    const prompt = topic
+        ? `Generate a quote based on "${topic}". If it's a specific person or character name (like Naruto, Einstein, etc), give a direct quote FROM that person/character. If it's a general topic (like "motivasi", "cinta"), give a relevant inspirational quote. Make it unique and meaningful. Respond in the same language as the topic.`
+        : `Generate a unique and inspiring random quote. Make it meaningful.`;
 
     try {
         const chatCompletion = await groq.chat.completions.create({
             messages: [
                 {
                     role: "system",
-                    content: `You are a wise assistant who only provides real, famous quotes from well-known people (philosophers, scientists, authors, leaders, etc). Never invent quotes or authors. When given a topic, detect the language of the topic and respond in that same language. If no topic is given, use English. Format your response exactly as: the quote text, then a new line, then "— Author Name". Do not use quotation marks around the quote.`,
+                    content: `You are a quote generator. When given a specific person or character name (e.g., "Naruto", "Einstein", "Luffy"), provide a famous quote DIRECTLY FROM that person/character - not just about them. When given a general topic, provide a relevant inspirational quote. Format: the quote text, then a new line, then "— Author/Character Name (Source if applicable)". Be creative and make each quote unique. Do not use quotation marks around the quote.`,
                 },
                 {
                     role: "user",
@@ -41,7 +30,7 @@ async function generateQuote(topic = null) {
                 },
             ],
             model: "llama-3.3-70b-versatile",
-            temperature: 0.8,
+            temperature: 0.9,
             max_tokens: 300,
         });
 
