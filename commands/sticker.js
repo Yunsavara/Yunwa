@@ -140,7 +140,7 @@ function calculateCropY(scaledHeight, targetSize, scale) {
  * @returns {Object} - Processed Jimp image
  */
 async function processImage(imageBuffer) {
-    let image = await Jimp.read(imageBuffer);
+    const image = await Jimp.read(imageBuffer);
 
     const width = image.width;
     const height = image.height;
@@ -150,15 +150,15 @@ async function processImage(imageBuffer) {
     const scaledWidth = Math.round(width * scale);
     const scaledHeight = Math.round(height * scale);
 
-    // Resize with cover strategy
-    image = await image.resize({ w: scaledWidth, h: scaledHeight });
+    // Resize with cover strategy (returns the image instance, not a promise)
+    image.resize({ w: scaledWidth, h: scaledHeight });
 
     // Calculate crop positions
     const cropX = Math.floor((scaledWidth - STICKER_SIZE) / 2);
     const cropY = calculateCropY(scaledHeight, STICKER_SIZE, scale);
 
-    // Crop to 512x512
-    image = await image.crop({
+    // Crop to 512x512 (returns the image instance, not a promise)
+    image.crop({
         x: cropX,
         y: cropY,
         w: STICKER_SIZE,
@@ -343,10 +343,10 @@ module.exports = {
             }
 
             // Download image
-            const imageBuffer = await downloadImage(imageMessage);
+            const imageBuffer = downloadImage(imageMessage);
 
             // Process image
-            const processedImage = await processImage(imageBuffer);
+            const processedImage = processImage(imageBuffer);
 
             // Generate temp file paths
             const tempPaths = generateTempPaths();
@@ -359,7 +359,7 @@ module.exports = {
             await fs.writeFile(tempPngPath, pngBuffer);
 
             // Add text overlay if needed
-            const finalPngPath = await addTextOverlay(
+            const finalPngPath = addTextOverlay(
                 tempPngPath,
                 tempTextPath,
                 topText,
@@ -371,7 +371,7 @@ module.exports = {
 
             // Read WebP and add metadata
             const stickerBuffer = await fs.readFile(tempWebpPath);
-            const stickerWithExif = await addStickerMetadata(stickerBuffer);
+            const stickerWithExif = addStickerMetadata(stickerBuffer);
 
             // Send sticker
             await yunwa.sendMessage(sender, {
