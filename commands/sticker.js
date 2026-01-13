@@ -129,9 +129,27 @@ module.exports = {
             // Resize with cover
             image = await image.resize({ w: scaledWidth, h: scaledHeight });
 
-            // Crop to 512x512 from center
+            // Crop to 512x512 with proportional adjustment
             const cropX = Math.floor((scaledWidth - targetSize) / 2);
-            const cropY = Math.floor((scaledHeight - targetSize) / 2);
+
+            // For vertical crop, bias towards top if image is zoomed a lot
+            // If scale > 1.5, the image is too small and needs heavy zoom
+            let cropY;
+            if (scaledHeight > targetSize) {
+                if (scale > 1.5) {
+                    // Heavy zoom - bias to top (30% from top instead of 50%)
+                    cropY = Math.floor((scaledHeight - targetSize) * 0.3);
+                } else if (scale > 1.2) {
+                    // Medium zoom - slightly bias to top (40% from top)
+                    cropY = Math.floor((scaledHeight - targetSize) * 0.4);
+                } else {
+                    // Light zoom - center
+                    cropY = Math.floor((scaledHeight - targetSize) / 2);
+                }
+            } else {
+                cropY = 0;
+            }
+
             image = await image.crop({
                 x: cropX,
                 y: cropY,
