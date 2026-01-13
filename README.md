@@ -49,7 +49,7 @@ Yunwa is a WhatsApp Bot built with Node.js and Baileys library. This bot is equi
 
 ```bash
 # Clone repository
-git clone <repository-url>
+git clone https://github.com/Yunsavara/Yunwa.git
 cd Yunwa
 
 # Install packages
@@ -74,6 +74,7 @@ The bot will automatically run the setup wizard to configure required API keys:
 
 - **Groq API Key** - For AI features (get it at [console.groq.com](https://console.groq.com/keys))
 - **Tavily API Key** - For web search (get it at [tavily.com](https://tavily.com/))
+- **Resita API Key** - For additional features (get it at [api.ferdev.my.id](https://api.ferdev.my.id/))
 
 ### Reconfigure
 
