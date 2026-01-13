@@ -13,13 +13,13 @@ module.exports = {
 
             // Categorize commands
             const categories = {
-                ai: { title: "🤖 AI & Smart Features", commands: [] },
-                media: { title: "🎨 Media & Images", commands: [] },
-                utility: { title: "🛠️ Utility Tools", commands: [] },
-                fun: { title: "🎉 Fun & Entertainment", commands: [] },
-                group: { title: "👥 Group Management", commands: [] },
-                system: { title: "⚙️ System", commands: [] },
-                general: { title: "📋 General", commands: [] },
+                ai: { title: "AI & Smart Features", commands: [] },
+                media: { title: "Media & Images", commands: [] },
+                utility: { title: "Utility Tools", commands: [] },
+                fun: { title: "Fun & Entertainment", commands: [] },
+                group: { title: "Group Management", commands: [] },
+                system: { title: "System", commands: [] },
+                general: { title: "General", commands: [] },
             };
 
             // Group commands by category
@@ -39,35 +39,34 @@ module.exports = {
             });
 
             // Build command list
-            let commandList = "*📚 Available Commands*\n\n";
+            let commandList = "*Available Commands:*\n\n";
 
             // Add commands by category
             Object.values(categories).forEach((category) => {
                 // Skip empty categories
                 if (category.commands.length === 0) return;
 
-                commandList += `${category.title}\n`;
+                commandList += `*${category.title}*\n`;
                 category.commands.forEach((cmd) => {
-                    commandList += `  • !${cmd.name} - ${cmd.description}\n`;
+                    commandList += `• !${cmd.name} - ${cmd.description}\n`;
                 });
                 commandList += "\n";
             });
 
-            commandList += `━━━━━━━━━━━━━━\n`;
-            commandList += `✨ Type command with ! prefix`;
+            commandList += `✨ Type command with ! prefix to use it`;
 
             const imagePath = path.join(__dirname, "../assets/intro.jpg");
-
-            const caption = `*Hello ${pushname}!* 👋\n\nI'm *Yunwa*, your WhatsApp assistant created by *Yunsavara*.\n\n${commandList}`;
 
             if (!fs.existsSync(imagePath)) {
                 // Send text only without image
                 await yunwa.sendMessage(sender, {
-                    text: caption,
+                    text: `*Hello ${pushname}!*\n\nI'm *Yunwa*, a WhatsApp assistant ready to help you!\n\n${commandList}`,
                 });
             } else {
                 // Send with image
                 const imageBuffer = fs.readFileSync(imagePath);
+
+                const caption = `*Hello ${pushname}!*\n\nI'm *Yunwa*, a WhatsApp assistant ready to help you!\n\n${commandList}`;
 
                 await yunwa.sendMessage(sender, {
                     image: imageBuffer,
