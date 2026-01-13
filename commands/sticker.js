@@ -181,10 +181,10 @@ module.exports = {
             if (topText || bottomText) {
                 // Calculate font size based on text length with proper padding
                 const calculateFontSize = (text, imageWidth) => {
-                    const baseFontSize = 55;
-                    const minFontSize = 25;
+                    const baseFontSize = 60;
+                    const minFontSize = 30;
                     const horizontalPadding = 80; // Total left-right padding
-                    const charWidthRatio = 0.65; // Character width ratio to font size
+                    const charWidthRatio = 0.7; // Character width ratio for Impact font
 
                     const availableWidth = imageWidth - horizontalPadding;
                     const estimatedTextWidth =
@@ -206,8 +206,9 @@ module.exports = {
                 if (topText) {
                     const fontSize = calculateFontSize(topText, 512);
                     const escapedText = topText.replace(/'/g, "'\\''");
+                    // Meme-style text: Impact font, white fill, black stroke
                     commands.push(
-                        `-gravity North -pointsize ${fontSize} -fill white -stroke black -strokewidth 3 -font DejaVu-Sans-Bold -annotate +0+25 '${escapedText.toUpperCase()}'`,
+                        `-gravity North -pointsize ${fontSize} -fill white -stroke black -strokewidth 4 -font Impact -annotate +0+20 '${escapedText.toUpperCase()}'`,
                     );
                 }
 
@@ -215,11 +216,12 @@ module.exports = {
                     const fontSize = calculateFontSize(bottomText, 512);
                     const escapedText = bottomText.replace(/'/g, "'\\''");
                     commands.push(
-                        `-gravity South -pointsize ${fontSize} -fill white -stroke black -strokewidth 3 -font DejaVu-Sans-Bold -annotate +0+25 '${escapedText.toUpperCase()}'`,
+                        `-gravity South -pointsize ${fontSize} -fill white -stroke black -strokewidth 4 -font Impact -annotate +0+20 '${escapedText.toUpperCase()}'`,
                     );
                 }
 
-                // Use 'magick' for ImageMagick v7
+                // Use 'magick' for ImageMagick v7 with Impact font
+                // If Impact is not available, fallback to Arial-Bold or DejaVu-Sans-Bold
                 const convertCmd = `magick "${tempPngPath}" ${commands.join(" ")} "${tempTextPath}"`;
 
                 try {
@@ -228,7 +230,47 @@ module.exports = {
                     tempPngPath = tempTextPath;
                 } catch (convertError) {
                     console.error("ImageMagick error:", convertError.message);
-                    // Fall back to image without text
+
+                    // Try fallback fonts if Impact is not available
+                    if (convertError.message.includes("Impact")) {
+                        console.log(
+                            "Impact font not found, trying fallback fonts...",
+                        );
+
+                        const fallbackFonts = [
+                            "Arial-Bold",
+                            "DejaVu-Sans-Bold",
+                            "Helvetica-Bold",
+                        ];
+                        let success = false;
+
+                        for (const fallbackFont of fallbackFonts) {
+                            try {
+                                const fallbackCommands = commands.map((cmd) =>
+                                    cmd.replace(
+                                        "-font Impact",
+                                        `-font ${fallbackFont}`,
+                                    ),
+                                );
+                                const fallbackCmd = `magick "${tempPngPath}" ${fallbackCommands.join(" ")} "${tempTextPath}"`;
+                                await execAsync(fallbackCmd);
+                                tempPngPath = tempTextPath;
+                                success = true;
+                                console.log(
+                                    `Using fallback font: ${fallbackFont}`,
+                                );
+                                break;
+                            } catch (e) {
+                                continue;
+                            }
+                        }
+
+                        if (!success) {
+                            console.error(
+                                "All fonts failed, proceeding without text",
+                            );
+                        }
+                    }
                 }
             }
 
@@ -243,8 +285,8 @@ module.exports = {
             // Send sticker with metadata
             await yunwa.sendMessage(sender, {
                 sticker: stickerBuffer,
-                packname: "WhatsApp Bot",
-                author: "Yunwa",
+                packname: "Yunwa WA Bot",
+                author: pushname || "User",
             });
 
             await yunwa.sendPresenceUpdate("paused", sender);
