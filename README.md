@@ -128,5 +128,3 @@ If you have any questions or issues:
 3. Make sure all dependencies are installed correctly
 
 ---
-
-Made with ❤️ by Yunsavara
