@@ -125,6 +125,6 @@ This bot is created for educational and personal use purposes. Use it wisely and
 If you have any questions or issues:
 1. Open an issue on GitHub
 2. Check error logs in terminal
-3. Make sure all dependencies are installed correctly
+3. Make sure all dependencies are installed correctly 
 
 ---
